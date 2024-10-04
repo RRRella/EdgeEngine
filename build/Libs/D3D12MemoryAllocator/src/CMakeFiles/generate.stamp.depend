@@ -1,0 +1,6 @@
+# CMake generation dependency list for this directory.
+C:/Dev/Local/EdgeEngine/Libs/D3D12MemoryAllocator/src/CMakeLists.txt
+C:/Dev/Local/EdgeEngine/Libs/D3D12MemoryAllocator/src/cmake/config.cmake.in
+C:/Program Files/CMake/share/cmake-3.30/Modules/BasicConfigVersion-SameMajorVersion.cmake.in
+C:/Program Files/CMake/share/cmake-3.30/Modules/CMakePackageConfigHelpers.cmake
+C:/Program Files/CMake/share/cmake-3.30/Modules/WriteBasicConfigVersionFile.cmake

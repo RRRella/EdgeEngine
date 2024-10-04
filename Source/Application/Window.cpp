@@ -1,0 +1,263 @@
+#include "Window.h"
+#include "../Renderer/SwapChain.h"
+#include "../Utils/Source/Log.h"
+#include "../Utils/Source/utils.h"
+#include "Data/Resources/resource.h"
+
+#include <dxgi1_6.h>
+
+///////////////////////////////////////////////////////////////////////////////
+IWindow::~IWindow()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+Window::Window(const std::string& title, FWindowDesc& initParams)
+    : IWindow(initParams.pWndOwner)
+    , width_(initParams.width)
+    , height_(initParams.height)
+    , isFullscreen_(initParams.bFullscreen)
+{
+    // https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
+    DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
+
+    ::RECT rect;
+    ::SetRect(&rect, 0, 0, width_, height_);
+    ::AdjustWindowRect(&rect, style, FALSE);
+
+    HWND hwnd_parent = NULL;
+    UINT FlagWindowStyle = WS_OVERLAPPEDWINDOW;
+
+    windowClass_.reset(new WindowClass("WindowClass", initParams.hInst, initParams.pfnWndProc));
+
+    // handle preferred display
+    struct MonitorEnumCallbackParams
+    {
+        int PreferredMonitorIndex = 0;
+        RECT* pRectOriginal = nullptr;
+        RECT* pRectNew = nullptr;
+    };
+    RECT preferredScreenRect = { CW_USEDEFAULT , CW_USEDEFAULT , CW_USEDEFAULT , CW_USEDEFAULT };
+    MonitorEnumCallbackParams p = {};
+    p.PreferredMonitorIndex = initParams.preferredDisplay;
+    p.pRectOriginal = &rect;
+    p.pRectNew = &preferredScreenRect;
+
+    auto fnCallbackMonitorEnum = [](HMONITOR Arg1, HDC Arg2, LPRECT Arg3, LPARAM Arg4) -> BOOL
+    {
+        BOOL b = TRUE;
+        MonitorEnumCallbackParams* pParam = (MonitorEnumCallbackParams*)Arg4;
+
+        MONITORINFOEX monitorInfo = {};
+        monitorInfo.cbSize = sizeof(MONITORINFOEX);
+        GetMonitorInfo(Arg1, &monitorInfo);
+
+        // get monitor index from monitor name
+        std::string monitorName(monitorInfo.szDevice); // monitorName is usually something like "///./DISPLAY1"
+        monitorName = StrUtil::split(monitorName, {'/', '\\', '.'})[0];         // strMonitorIndex is "1" for "///./DISPLAY1"
+        std::string strMonitorIndex = monitorName.substr(monitorName.size()-1); // monitorIndex    is  0  for "///./DISPLAY1"
+        const int monitorIndex = std::atoi(strMonitorIndex.c_str()) - 1;        // -1 so it starts from 0
+        
+        // copy over the desired monitor's rect
+        if (monitorIndex == pParam->PreferredMonitorIndex)
+        {
+            *pParam->pRectNew = *Arg3;
+        }
+        return b;
+    };
+    auto fnCenterScreen = [](const RECT& screenRect, const RECT& wndRect) -> RECT
+    {
+        RECT centered = {};
+
+        const int szWndX = wndRect.right - wndRect.left;
+        const int szWndY = wndRect.bottom - wndRect.top;
+        const int offsetX = (screenRect.right - screenRect.left - szWndX) / 2;
+        const int offsetY = (screenRect.bottom - screenRect.top - szWndY) / 2;
+
+        centered.left = screenRect.left + offsetX;
+        centered.right = centered.left + szWndX;
+        centered.top = screenRect.top + offsetY;
+        centered.bottom = centered.top + szWndY;
+
+        return centered;
+    };
+
+    EnumDisplayMonitors(NULL, NULL, fnCallbackMonitorEnum, (LPARAM)&p);
+    const bool bPreferredDisplayNotFound = 
+           (preferredScreenRect.right == preferredScreenRect.left == preferredScreenRect.top == preferredScreenRect.bottom )
+        && (preferredScreenRect.right == CW_USEDEFAULT);
+    RECT centeredRect = bPreferredDisplayNotFound
+        ? preferredScreenRect
+        : fnCenterScreen(preferredScreenRect, rect);
+
+    // set fullscreen width & height based on the selected monitor
+    this->FSwidth_  = preferredScreenRect.right  - preferredScreenRect.left;
+    this->FSheight_ = preferredScreenRect.bottom - preferredScreenRect.top;
+
+    // https://docs.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window
+    // Create the main window.
+    hwnd_ = CreateWindowEx(NULL,
+        windowClass_->GetName().c_str(),
+        title.c_str(),
+        FlagWindowStyle,
+        centeredRect.left,      // positions //CW_USEDEFAULT,
+        centeredRect.top ,      // positions //CW_USEDEFAULT,
+        rect.right - rect.left, // size
+        rect.bottom - rect.top, // size
+        hwnd_parent,
+        NULL,    // we aren't using menus, NULL
+        initParams.hInst,   // application handle
+        NULL);   // used with multiple windows, NULL
+
+    windowStyle_ = FlagWindowStyle;
+    ::SetWindowLongPtr(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR> (this));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+bool IWindow::IsClosed() const
+{
+    return IsClosedImpl();
+}
+
+bool IWindow::IsFullscreen() const
+{
+    return IsFullscreenImpl();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+HWND Window::GetHWND() const
+{
+    return hwnd_;
+}
+
+void Window::Show()
+{
+    ::ShowWindow(hwnd_, SW_SHOWDEFAULT);
+    //::UpdateWindow(hwnd_);
+}
+
+void Window::Minimize()
+{
+
+    ::ShowWindow(hwnd_, SW_MINIMIZE);
+}
+
+void Window::Close()
+{
+    this->isClosed_ = true;
+    ::ShowWindow(hwnd_, FALSE);
+    ::DestroyWindow(hwnd_);
+}
+
+// from MS D3D12Fullscreen sample
+void Window::ToggleWindowedFullscreen(SwapChain* pSwapChain /*= nullptr*/)
+{
+    if (isFullscreen_)
+    {
+        // Restore the window's attributes and size.
+        SetWindowLong(hwnd_, GWL_STYLE, windowStyle_);
+
+        SetWindowPos(
+            hwnd_,
+            HWND_NOTOPMOST,
+            rect_.left,
+            rect_.top,
+            rect_.right - rect_.left,
+            rect_.bottom - rect_.top,
+            SWP_FRAMECHANGED | SWP_NOACTIVATE);
+
+        ShowWindow(hwnd_, SW_NORMAL);
+    }
+    else
+    {
+        // Save the old window rect so we can restore it when exiting fullscreen mode.
+        GetWindowRect(hwnd_, &rect_);
+
+        // Make the window borderless so that the client area can fill the screen.
+        SetWindowLong(hwnd_, GWL_STYLE, windowStyle_ & ~(WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SYSMENU | WS_THICKFRAME));
+
+        RECT fullscreenWindowRect;
+        
+        if (pSwapChain)
+        {
+            // Get the settings of the display on which the app's window is currently displayed
+            IDXGIOutput* pOutput = nullptr;
+            pSwapChain->mpSwapChain->GetContainingOutput(&pOutput);
+            DXGI_OUTPUT_DESC Desc;
+            pOutput->GetDesc(&Desc);
+            fullscreenWindowRect = Desc.DesktopCoordinates;
+        }
+        else
+        {
+            // Fallback to EnumDisplaySettings implementation
+            // Get the settings of the primary display
+            DEVMODE devMode = {};
+            devMode.dmSize = sizeof(DEVMODE);
+            EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &devMode);
+
+            fullscreenWindowRect = {
+                devMode.dmPosition.x,
+                devMode.dmPosition.y,
+                devMode.dmPosition.x + static_cast<LONG>(devMode.dmPelsWidth),
+                devMode.dmPosition.y + static_cast<LONG>(devMode.dmPelsHeight)
+            };
+        }
+
+        SetWindowPos(
+            hwnd_,
+            HWND_TOPMOST,
+            fullscreenWindowRect.left,
+            fullscreenWindowRect.top,
+            fullscreenWindowRect.right,
+            fullscreenWindowRect.bottom,
+            SWP_FRAMECHANGED | SWP_NOACTIVATE);
+
+        ShowWindow(hwnd_, SW_MAXIMIZE);
+
+        // save fullscreen width & height 
+        this->FSwidth_  = fullscreenWindowRect.right  - fullscreenWindowRect.left;
+        this->FSheight_ = fullscreenWindowRect.bottom - fullscreenWindowRect.top;
+    }
+
+    isFullscreen_ = !isFullscreen_;
+}
+
+/////////////////////////////////////////////////////////////////////////
+WindowClass::WindowClass(const std::string& name, HINSTANCE hInst, ::WNDPROC procedure)
+    : name_(name)
+{
+    ::WNDCLASSEX wc = {};
+
+    // Register the window class for the main window.
+    // https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
+    wc.style = CS_VREDRAW | CS_HREDRAW | CS_DBLCLKS;
+    wc.lpfnWndProc = procedure;
+    wc.cbClsExtra = 0;
+    wc.cbWndExtra = 0;
+    wc.hInstance = hInst;
+    wc.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
+    if (wc.hIcon == NULL)
+    {
+        DWORD dw = GetLastError();
+        Log::Warning("Couldn't load icon for window: 0x%x", dw);
+    }
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = NULL;
+    wc.lpszMenuName = NULL;
+    wc.lpszClassName = name_.c_str();
+    wc.cbSize = sizeof(WNDCLASSEX);
+
+    ::RegisterClassEx(&wc);
+}
+
+/////////////////////////////////////////////////////////////////////////
+const std::string& WindowClass::GetName() const
+{
+    return name_;
+}
+
+/////////////////////////////////////////////////////////////////////////
+WindowClass::~WindowClass()
+{
+    ::UnregisterClassA(name_.c_str(), (HINSTANCE)::GetModuleHandle(NULL));
+}
