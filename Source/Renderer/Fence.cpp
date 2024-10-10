@@ -1,4 +1,5 @@
 #include "Fence.h"
+#include "Common.h"
 
 #include <d3d12.h>
 

@@ -23,12 +23,3 @@ private:
     ID3D12Fence* mpFence = nullptr;
     UINT64       mFenceValue = 0;
 };
-
-#include <cassert>
-inline void ThrowIfFailed(HRESULT hr)
-{
-    if (FAILED(hr))
-    {
-        assert(false);// throw HrException(hr);
-    }
-}

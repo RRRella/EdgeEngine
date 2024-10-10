@@ -60,6 +60,7 @@ struct FWindowRenderContext
 	std::vector<ID3D12CommandAllocator*> mCommandAllocatorsCompute;
 	std::vector<ID3D12CommandAllocator*> mCommandAllocatorsCopy;
 
+	DynamicBufferHeap mDynamicHeap_ConstantBuffer;
 
 	ID3D12GraphicsCommandList* pCmdList_GFX = nullptr;
 
@@ -120,7 +121,7 @@ public:
 
 	// Getters: PSO, RootSignature, Heap
 	inline ID3D12PipelineState*  GetPSO(EBuiltinPSOs pso) const { return mpBuiltinPSOs[pso]; }
-	inline ID3D12RootSignature*  GetRootSignature(EVertexBufferType vbType) const { return mpBuiltinRootSignatures[vbType]; }
+	inline ID3D12RootSignature*  GetRootSignature(int idx) const { return mpBuiltinRootSignatures[idx]; }
 	ID3D12DescriptorHeap*        GetDescHeap(EResourceHeapType HeapType);
 
 	// Getters: Resource Views
@@ -142,7 +143,6 @@ public:
 
 
 private:
-	using RootSignatureArray_t = std::array<ID3D12RootSignature*, EVertexBufferType::NUM_VERTEX_BUFFER_TYPES>;
 	using PSOArray_t           = std::array<ID3D12PipelineState*, EBuiltinPSOs::NUM_BUILTIN_PSOs>;
 
 	// GPU
@@ -158,10 +158,10 @@ private:
 	StaticResourceViewHeap                         mHeapCBV_SRV_UAV;
 	StaticResourceViewHeap                         mHeapSampler;
 	UploadHeap                                     mHeapUpload;
+	StaticBufferHeap                               mStaticHeap_VertexBuffer;
+	StaticBufferHeap                               mStaticHeap_IndexBuffer;
 
 	// resources & views
-	StaticBufferPool                               mStaticVertexBufferPool;
-	StaticBufferPool                               mStaticIndexBufferPool;
 	std::unordered_map<TextureID, Texture>         mTextures;
 	std::unordered_map<SamplerID, SAMPLER>         mSamplers;
 	std::unordered_map<BufferID, VBV>              mVBVs;
@@ -171,8 +171,9 @@ private:
 	std::unordered_map<UAV_ID  , CBV_SRV_UAV>      mUAVs;
 	std::unordered_map<RTV_ID  , RTV>              mRTVs;
 	std::unordered_map<DSV_ID  , DSV>              mDSVs;
-	mutable std::mutex                             mMtxStaticVBPool;
-	mutable std::mutex                             mMtxStaticIBPool;
+	mutable std::mutex                             mMtxStaticVBHeap;
+	mutable std::mutex                             mMtxStaticIBHeap;
+	mutable std::mutex                             mMtxDynamicCBHeap;		
 	mutable std::mutex                             mMtxTextures;
 	mutable std::mutex                             mMtxSamplers;
 	mutable std::mutex                             mMtxSRVs;
@@ -184,7 +185,7 @@ private:
 	mutable std::mutex                             mMtxIBVs;
 
 	// root signatures
-	RootSignatureArray_t                           mpBuiltinRootSignatures;
+	std::vector<ID3D12RootSignature*>              mpBuiltinRootSignatures;
 
 	// PSOs
 	PSOArray_t                                     mpBuiltinPSOs;
@@ -199,7 +200,7 @@ private:
 
 private:
 	void InitializeD3D12MA();
-	void InitializeResourceHeaps();
+	void InitializeHeaps();
 
 	void LoadPSOs();
 	void LoadDefaultResources();
