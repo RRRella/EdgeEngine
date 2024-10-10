@@ -492,6 +492,9 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Transform.h" />
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Camera.h" />
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Quaternion.h" />
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Platform.h" />
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Window.h" />
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Settings.h" />
@@ -500,6 +503,9 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Events.h" />
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Mesh.h" />
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Geometry.h" />
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Transform.cpp" />
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Camera.cpp" />
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Quaternion.cpp" />
     <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Platform.cpp" />
     <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Window.cpp" />
     <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Main.cpp" />

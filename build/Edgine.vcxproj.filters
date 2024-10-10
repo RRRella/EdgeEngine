@@ -1,6 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Transform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Quaternion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Platform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -33,6 +42,15 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Transform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Quaternion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Platform.h">
       <Filter>Header Files</Filter>
     </ClInclude>

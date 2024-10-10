@@ -36,23 +36,6 @@ using RTV_ID    = ID_TYPE;
 using DSV_ID    = ID_TYPE;
 #define INVALID_ID  -1
 
-
-//
-// TYPE DEFINITIONS
-//
-// Data to be updated per frame
-struct FFrameData
-{
-	std::array<float, 4> SwapChainClearColor;
-};
-struct FLoadingScreenData
-{
-	std::array<float, 4> SwapChainClearColor;
-	// TODO: loading screen background img resource
-	// TODO: animation resources
-	SRV_ID SRVLoadingScreen = INVALID_ID;
-};
-
 struct FRendererInitializeParameters
 {
 	std::vector<FWindowRepresentation> Windows;

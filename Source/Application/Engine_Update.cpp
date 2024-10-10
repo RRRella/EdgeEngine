@@ -2,6 +2,8 @@
 
 #include "../Utils/Source/utils.h"
 
+using namespace DirectX;
+
 void Engine::UpdateThread_Main()
 {
 	Log::Info("UpdateThread_Main()");
@@ -123,12 +125,15 @@ void Engine::Load_SceneData_Dispatch()
 	mUpdateWorkerThreads.AddTask([&]() { Sleep(2000); Log::Info("Worker SLEEP done!"); }); // simulate 2second loading time
 	mUpdateWorkerThreads.AddTask([&]()
 	{
+		const int NumBackBuffer_WndMain = mRenderer.GetSwapChainBackBufferCount(mpWinMain);
+
 		// TODO: initialize window scene data here for now, should update this to proper location later on (Scene probably?)
 		FFrameData data[2];
 		data[0].SwapChainClearColor = { 0.07f, 0.07f, 0.07f, 1.0f };
-		data[1].SwapChainClearColor = { 0.20f, 0.21f, 0.21f, 1.0f };
-		const int NumBackBuffer_WndMain = mRenderer.GetSwapChainBackBufferCount(mpWinMain);
+		data[0].TFCube = Transform(XMFLOAT3(0, 0, 5), Quaternion::FromAxisAngle(XMFLOAT3(1, 1, 1), 45.0f * DEG2RAD), XMFLOAT3(0.5f, 0.5f, 0.5f));
 		mScene_MainWnd.mFrameData.resize(NumBackBuffer_WndMain, data[0]);
+
+		data[1].SwapChainClearColor = { 0.20f, 0.21f, 0.21f, 1.0f };
 
 		mWindowUpdateContextLookup[mpWinMain->GetHWND()] = &mScene_MainWnd;
 	});

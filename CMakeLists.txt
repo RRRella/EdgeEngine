@@ -31,6 +31,9 @@ set (Shaders
 )
 
 set (HeaderEdgine 
+    "Source/Application/Transform.h"
+    "Source/Application/Camera.h"
+    "Source/Application/Quaternion.h"
     "Source/Application/Platform.h"
     "Source/Application/Window.h"
     "Source/Application/Settings.h"
@@ -41,7 +44,10 @@ set (HeaderEdgine
     "Source/Application/Geometry.h"
 )
 
-set (SourceEdgine 
+set (SourceEdgine
+    "Source/Application/Transform.cpp"
+    "Source/Application/Camera.cpp"
+    "Source/Application/Quaternion.cpp" 
     "Source/Application/Platform.cpp"
     "Source/Application/Window.cpp"
     "Source/Application/Main.cpp"
