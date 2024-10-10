@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Multithreading.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\SystemInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Image.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Timer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\tinyxml2\tinyxml2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\miniz\miniz.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Log.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Multithreading.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\SystemInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Timer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image.h">
+      <Filter>Libs</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image_resize.h">
+      <Filter>Libs</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image_write.h">
+      <Filter>Libs</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\tinyxml2\tinyxml2.h">
+      <Filter>Libs</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\tinyexr\tinyexr.h">
+      <Filter>Libs</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\miniz\miniz.h">
+      <Filter>Libs</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Dev\Local\EdgeEngine\Source\Utils\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{C2FAD294-CEB9-3DCC-BDA5-7C36090EA025}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs">
+      <UniqueIdentifier>{1ECD0D66-FFDF-306A-862D-84B5752D4D60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{955739CF-2822-3E46-BD8A-AC612E6274B9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

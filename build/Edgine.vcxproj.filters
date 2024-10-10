@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Platform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Engine_Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Engine_Render.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Engine_Update.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Engine_WindowEvents.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Events.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Mesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Geometry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Settings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Engine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Events.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Geometry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Dev\Local\EdgeEngine\Data\Resources\resource.h">
+      <Filter>Resource</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Dev\Local\EdgeEngine\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="C:\Dev\Local\EdgeEngine\Data\Icons\Edgine.ico">
+      <Filter>Resource</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="C:\Dev\Local\EdgeEngine\Data\Resources\Edgine.rc">
+      <Filter>Resource</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="C:\Dev\Local\EdgeEngine\Data\EngineSettings.ini">
+      <Filter>Config</Filter>
+    </Text>
+    <Text Include="C:\Dev\Local\EdgeEngine\Source\Shaders\hello-triangle.hlsl">
+      <Filter>Shaders</Filter>
+    </Text>
+    <Text Include="C:\Dev\Local\EdgeEngine\Source\Shaders\hello-cube.hlsl">
+      <Filter>Shaders</Filter>
+    </Text>
+    <Text Include="C:\Dev\Local\EdgeEngine\Source\Shaders\FullscreenTriangle.hlsl">
+      <Filter>Shaders</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Config">
+      <UniqueIdentifier>{044AA9E0-10DB-348E-90A4-900D015DA9C6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{C2FAD294-CEB9-3DCC-BDA5-7C36090EA025}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource">
+      <UniqueIdentifier>{24BA3BE8-78A5-32F3-A718-1BAC733D7FF7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{C9F90F0D-66A8-3DCA-81D3-FD9438CFA0F8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{955739CF-2822-3E46-BD8A-AC612E6274B9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

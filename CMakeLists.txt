@@ -26,6 +26,7 @@ set (Config
 
 set (Shaders
     "Source/Shaders/hello-triangle.hlsl"
+    "Source/Shaders/hello-cube.hlsl"
     "Source/Shaders/FullscreenTriangle.hlsl"
 )
 

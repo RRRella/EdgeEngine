@@ -127,7 +127,7 @@ void Engine::InitializeBuiltinMeshes()
 		mBuiltinMeshes[EBuiltInMeshes::TRIANGLE] = Mesh(&mRenderer, data.Vertices, data.Indices, mBuiltinMeshNames[EBuiltInMeshes::TRIANGLE]);
 	}
 	{
-		GeometryGenerator::GeometryData<FVertexWithNormalAndTangent> data = GeometryGenerator::Cube<FVertexWithNormalAndTangent>();
+		GeometryGenerator::GeometryData<FVertexWithColorAndAlpha> data = GeometryGenerator::Cube<FVertexWithColorAndAlpha>();
 		mBuiltinMeshNames[EBuiltInMeshes::CUBE] = "Cube";
 		mBuiltinMeshes[EBuiltInMeshes::CUBE] = Mesh(&mRenderer, data.Vertices, data.Indices, mBuiltinMeshNames[EBuiltInMeshes::CUBE]);
 	}
@@ -274,7 +274,7 @@ HRESULT Engine::RenderThread_RenderMainWindow_LoadingScreen(FWindowRenderContext
 	const float           RenderResolutionX = static_cast<float>(ctx.MainRTResolutionX);
 	const float           RenderResolutionY = static_cast<float>(ctx.MainRTResolutionY);
 	D3D12_VIEWPORT        viewport          { 0.0f, 0.0f, RenderResolutionX, RenderResolutionY, 0.0f, 1.0f };
-	const auto            VBIBIDs           = mBuiltinMeshes[EBuiltInMeshes::TRIANGLE].GetIABuffers();
+	const auto            VBIBIDs           = mBuiltinMeshes[EBuiltInMeshes::TRIANGLE].GetIABufferIDs();
 	const BufferID&       IB_ID             = VBIBIDs.second;
 	const IBV&            ib                = mRenderer.GetIndexBufferView(IB_ID);
 	ID3D12DescriptorHeap* ppHeaps[]         = { mRenderer.GetDescHeap(EResourceHeapType::CBV_SRV_UAV_HEAP) };
@@ -381,7 +381,7 @@ HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 
 	pCmd->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
-	pCmd->SetPipelineState(mRenderer.GetPSO(EBuiltinPSOs::HELLO_WORLD_TRIANGLE_PSO));
+	pCmd->SetPipelineState(mRenderer.GetPSO(EBuiltinPSOs::HELLO_WORLD_CUBE_PSO));
 	pCmd->SetGraphicsRootSignature(mRenderer.GetRootSignature(EVertexBufferType::COLOR_AND_ALPHA));
 
 #if 0
@@ -399,7 +399,10 @@ HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 	D3D12_RECT scissorsRect{ 0, 0, (LONG)RenderResolutionX, (LONG)RenderResolutionY };
 	pCmd->RSSetScissorRects(1, &scissorsRect);
 
-	const auto VBIBIDs = mBuiltinMeshes[EBuiltInMeshes::TRIANGLE].GetIABuffers();
+	const Mesh& mesh = mBuiltinMeshes[EBuiltInMeshes::CUBE];
+	const auto VBIBIDs = mesh.GetIABufferIDs();
+	const uint32 NumIndices = mesh.GetNumIndices();
+	const uint32 NumInstances = 1;
 	const BufferID& VB_ID = VBIBIDs.first;
 	const BufferID& IB_ID = VBIBIDs.second;
 	const VBV& vb = mRenderer.GetVertexBufferView(VB_ID);
@@ -409,7 +412,7 @@ HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 	pCmd->IASetVertexBuffers(0, 1, &vb);
 	pCmd->IASetIndexBuffer(&ib);
 
-	pCmd->DrawIndexedInstanced(3, 1, 0, 0, 0);
+	pCmd->DrawIndexedInstanced(NumIndices, NumInstances, 0, 0, 0);
 
 
 	// Transition SwapChain for Present

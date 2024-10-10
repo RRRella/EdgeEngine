@@ -125,7 +125,7 @@ public:
 //-----------------------------------------------------------------------
 
 private:
-	using BuiltinMeshArray_t     = std::array<Mesh       , EBuiltInMeshes::NUM_BUILTIN_MESHES>;
+	using BuiltinMeshArray_t     = std::array<Mesh      , EBuiltInMeshes::NUM_BUILTIN_MESHES>;
 	using BuiltinMeshNameArray_t = std::array<std::string, EBuiltInMeshes::NUM_BUILTIN_MESHES>;
 
 	// threads

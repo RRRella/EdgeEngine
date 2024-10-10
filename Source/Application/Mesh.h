@@ -26,36 +26,33 @@ struct VertexIndexBufferIDPair
 	inline std::pair<BufferID, BufferID> GetIABufferPair() const { return std::make_pair(mVertexBufferID, mIndexBufferID); }
 };
 
-template<class TVertex>
+template<class TVertex, class TIndex = uint32>
 struct MeshLODData
 {
-	MeshLODData< TVertex >() = delete;
-	MeshLODData< TVertex >(int numLODs, const char* pMeshName)
+	MeshLODData() = delete;
+	MeshLODData(int numLODs, const char* pMeshName)
 		: LODVertices(numLODs)
 		, LODIndices(numLODs)
 		, meshName(pMeshName)
 	{}
 	
 	std::vector<std::vector<TVertex>> LODVertices;
-	std::vector<std::vector<unsigned>> LODIndices ;
+	std::vector<std::vector<TIndex>>  LODIndices ;
 	std::string meshName;
 };
 
 struct Mesh
 {
 public:
-	//
-	// Constructors / Operators
-	//
-	template<class TVertex>
+	template<class TVertex, class TIndex = unsigned>
 	Mesh(
 		Renderer* pRenderer,
 		const std::vector<TVertex>&  vertices,
-		const std::vector<unsigned>& indices,
+		const std::vector<TIndex>& indices,
 		const std::string&           name
 	);
 
-	template<class TVertex>
+	template<class TVertex, class TIndex = unsigned>
 	Mesh(const MeshLODData<TVertex>& meshLODData);
 
 	Mesh() = default;
@@ -68,21 +65,23 @@ public:
 	//
 	// Interface
 	//
-	std::pair<BufferID, BufferID> GetIABuffers(int lod = 0) const;
+	std::pair<BufferID, BufferID> GetIABufferIDs(int lod = 0) const;
+	inline uint GetNumIndices(int lod = 0) const { return mNumIndicesPerLODLevel[lod]; }
 
 	
 private:
 	std::vector<VertexIndexBufferIDPair> mLODBufferPairs;
+	std::vector<uint> mNumIndicesPerLODLevel;
 };
 
 //
 // Template Definitions
 //
-template<class TVertex>
+template<class TVertex, class TIndex>
 Mesh::Mesh(
 	Renderer* pRenderer,
 	const std::vector<TVertex>& vertices,
-	const std::vector<unsigned>& indices,
+	const std::vector<TIndex>& indices,
 	const std::string& name
 )
 {
@@ -107,9 +106,10 @@ Mesh::Mesh(
 	BufferID indexBufferID = pRenderer->CreateBuffer(bufferDesc);
 
 	mLODBufferPairs.push_back({ vertexBufferID, indexBufferID }); // LOD[0]
+	mNumIndicesPerLODLevel.push_back(bufferDesc.NumElements);
 }
 
-template<class TVertex>
+template<class TVertex, class TIndex>
 Mesh::Mesh(const MeshLODData<TVertex>& meshLODData)
 {
 	for (size_t LOD = 0; LOD < meshLODData.LODVertices.size(); ++LOD)
@@ -121,7 +121,7 @@ Mesh::Mesh(const MeshLODData<TVertex>& meshLODData)
 
 		bufferDesc.mType = VERTEX_BUFFER;
 		//bufferDesc.mUsage = GPU_READ_WRITE;
-		bufferDesc.mElementCount = static_cast<unsigned>(meshLODData.LODVertices[LOD].size());
+		bufferDesc.NumElements = static_cast<unsigned>(meshLODData.LODIndices[LOD].size());
 		bufferDesc.mStride = sizeof(meshLODData.LODVertices[LOD][0]);
 		BufferID vertexBufferID = spRenderer->CreateBuffer(bufferDesc, meshLODData.LODVertices[LOD].data(), VBName.c_str());
 
@@ -132,5 +132,6 @@ Mesh::Mesh(const MeshLODData<TVertex>& meshLODData)
 		BufferID indexBufferID = spRenderer->CreateBuffer(bufferDesc, meshLODData.LODIndices[LOD].data(), IBName.c_str());
 
 		mLODBufferPairs.push_back({ vertexBufferID, indexBufferID });
+		mNumIndicesPerLODLevel.push_back(bufferDesc.NumElements);
 	}
 }
