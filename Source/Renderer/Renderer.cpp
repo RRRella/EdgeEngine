@@ -580,13 +580,6 @@ void Renderer::LoadDefaultResources()
 		textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 	}	
 
-	// programmatically generated texture
-	{
-		std::vector<UINT8> texture = Texture::GenerateTexture_Checkerboard(sizeX);
-		TextureID texID = this->CreateTexture("Checkerboard", textureDesc, texture.data());
-		this->CreateAndInitializeSRV(texID);
-	}
-
 #if 0
 	// HDR texture from file
 	{

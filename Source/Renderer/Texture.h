@@ -25,7 +25,6 @@ struct TextureCreateDesc
 class Texture
 {
 public:
-	static std::vector<uint8> GenerateTexture_Checkerboard(uint Dimension);
 
 	Texture()  = default;
 	~Texture() = default;

@@ -11,16 +11,16 @@ size_t StaticBufferHeap::MEMORY_ALIGNMENT = 256;
 
 static D3D12_RESOURCE_STATES GetResourceTransitionState(EBufferType eType)
 {
-    D3D12_RESOURCE_STATES s;
+    D3D12_RESOURCE_STATES s = D3D12_RESOURCE_STATE_COMMON; //0
     switch (eType)
     {
-        case CONSTANT_BUFFER : s = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER; break;
-        case VERTEX_BUFFER   : s = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER; break;
-        case INDEX_BUFFER    : s = D3D12_RESOURCE_STATE_INDEX_BUFFER; break;
-        default:
-            Log::Warning("StaticBufferPool::Create(): unkown resource type, couldn't determine resource transition state for upload.");
-            break;
-        }
+    case CONSTANT_BUFFER: s = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER; break;
+    case VERTEX_BUFFER: s = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER; break;
+    case INDEX_BUFFER: s = D3D12_RESOURCE_STATE_INDEX_BUFFER; break;
+    default:
+        Log::Warning("StaticBufferPool::Create(): unkown resource type, couldn't determine resource transition state for upload.");
+        break;
+    }
     return s;
 }
 
@@ -169,14 +169,11 @@ bool StaticBufferHeap::AllocVertexBuffer(uint32 numVertices, uint32 strideInByte
 bool StaticBufferHeap::AllocIndexBuffer(uint32 numIndices, uint32 strideInBytes, void** ppDataOut, D3D12_INDEX_BUFFER_VIEW* pViewOut)
 {
     bool bSuccess = AllocBuffer(numIndices, strideInBytes, ppDataOut, &pViewOut->BufferLocation, &pViewOut->SizeInBytes);
-    pViewOut->Format = bSuccess 
+    pViewOut->Format = bSuccess
         ? ((strideInBytes == 4) ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT)
         : DXGI_FORMAT_UNKNOWN;
     return bSuccess;
 }
-
-
-
 
 //
 // UPLOAD
@@ -202,7 +199,6 @@ void StaticBufferHeap::UploadData(ID3D12GraphicsCommandList* pCmd)
         mMemInit = mMemOffset;
     }
 }
-
 
 
 //
@@ -304,7 +300,7 @@ bool RingBuffer::Alloc(uint32_t size, uint32_t* pOut)
 }
 bool RingBuffer::Free(uint32_t size)
 {
-    if (m_AllocatedSize > size)
+    if (m_AllocatedSize >= size)
     {
         m_Head = (m_Head + size) % m_TotalSize;
         m_AllocatedSize -= size;

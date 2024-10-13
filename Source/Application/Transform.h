@@ -1,68 +1,112 @@
 #pragma once
 #include <DirectXMath.h>
-#include "Quaternion.h"
 #include <utility>
-constexpr DirectX::XMFLOAT3 UpVector      = DirectX::XMFLOAT3(0, 1, 0);
-constexpr DirectX::XMFLOAT3 RightVector   = DirectX::XMFLOAT3(1, 0, 0);
-constexpr DirectX::XMFLOAT3 ForwardVector = DirectX::XMFLOAT3(0, 0, 1);
-constexpr DirectX::XMFLOAT3 XAxis = DirectX::XMFLOAT3(1, 0, 0);
-constexpr DirectX::XMFLOAT3 YAxis = DirectX::XMFLOAT3(0, 1, 0);
-constexpr DirectX::XMFLOAT3 ZAxis = DirectX::XMFLOAT3(0, 0, 1);
+
+using namespace DirectX;
+
+#define DEG2RAD (XM_PI / 180.0f)
+#define RAD2DEG (180.0f / XM_PI)
+#define PI		XM_PI
+#define PI_DIV2 XM_PIDIV2
+
+constexpr inline XMFLOAT3 UpVector      = XMFLOAT3(0, 1, 0);
+constexpr inline XMFLOAT3 RightVector   = XMFLOAT3(1, 0, 0);
+constexpr inline XMFLOAT3 ForwardVector = XMFLOAT3(0, 0, 1);
+constexpr inline XMFLOAT3 XAxis = XMFLOAT3(1, 0, 0);
+constexpr inline XMFLOAT3 YAxis = XMFLOAT3(0, 1, 0);
+constexpr inline XMFLOAT3 ZAxis = XMFLOAT3(0, 0, 1);
+
 struct Transform
 {
 public:
-	//----------------------------------------------------------------------------------------------------------------
-	// CONSTRUCTOR / DESTRUCTOR
-	//----------------------------------------------------------------------------------------------------------------
-	Transform(  const DirectX::XMFLOAT3& position = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
-	            const Quaternion&        rotation = Quaternion::Identity(),
-	            const DirectX::XMFLOAT3& scale    = DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
+	
+	Transform(  const XMFLOAT3& position = XMFLOAT3(0.0f, 0.0f, 0.0f),
+				const XMVECTOR& rotation = XMVECTOR{ 1.0f,0.0f, 0.0f, 0.0f },
+	            const XMFLOAT3& scale    = XMFLOAT3(1.0f, 1.0f, 1.0f));
 	~Transform();
 	Transform& operator=(const Transform&);
-	//----------------------------------------------------------------------------------------------------------------
-	// GETTERS & SETTERS
-	//----------------------------------------------------------------------------------------------------------------
-	inline void SetXRotationDeg(float xDeg)              { _rotation = Quaternion::FromAxisAngle(RightVector  , xDeg * DEG2RAD); }
-	inline void SetYRotationDeg(float yDeg)              { _rotation = Quaternion::FromAxisAngle(UpVector     , yDeg * DEG2RAD); }
-	inline void SetZRotationDeg(float zDeg)              { _rotation = Quaternion::FromAxisAngle(ForwardVector, zDeg * DEG2RAD); }
-	inline void SetScale(float x, float y, float z)      { _scale = DirectX::XMFLOAT3(x, y, z); }
-	inline void SetScale(const DirectX::XMFLOAT3& scl)   { _scale = scl; }
-	inline void SetUniformScale(float s)                 { _scale = DirectX::XMFLOAT3(s, s, s); }
-	inline void SetPosition(float x, float y, float z)   { _position = DirectX::XMFLOAT3(x, y, z); }
-	inline void SetPosition(const DirectX::XMFLOAT3& pos){ _position = pos; }
-	//----------------------------------------------------------------------------------------------------------------
-	// TRANSFORMATIONS
-	//----------------------------------------------------------------------------------------------------------------
-	void Translate(const DirectX::XMFLOAT3& translation);
+	
+	void SetXRotationDeg(float xDeg)              { _rotation = XMQuaternionRotationAxis(XMLoadFloat3(&RightVector), xDeg * DEG2RAD); }
+	void SetYRotationDeg(float yDeg)              { _rotation = XMQuaternionRotationAxis(XMLoadFloat3(&UpVector), yDeg * DEG2RAD); }
+	void SetZRotationDeg(float zDeg)              { _rotation = XMQuaternionRotationAxis(XMLoadFloat3(&ForwardVector), zDeg * DEG2RAD); }
+	void SetScale(float x, float y, float z)      { _scale = XMFLOAT3(x, y, z); }
+	void SetScale(const XMFLOAT3& scl)   { _scale = scl; }
+	void SetUniformScale(float s)                 { _scale = XMFLOAT3(s, s, s); }
+	void SetPosition(float x, float y, float z)   { _position = XMFLOAT3(x, y, z); }
+	void SetPosition(const XMFLOAT3& pos){ _position = pos; }
+	
+	void Translate(const XMFLOAT3& translation);
 	void Translate(float x, float y, float z);
-	void Scale    (const DirectX::XMFLOAT3& scl);
+	void Scale    (const XMFLOAT3& scl);
 	
-	       void RotateAroundPointAndAxis(const DirectX::XMVECTOR& axis, float angle, const DirectX::XMVECTOR& point);
-	inline void RotateAroundAxisRadians (const DirectX::XMVECTOR& axis, float angle) { RotateInWorldSpace(Quaternion::FromAxisAngle(axis, angle)); }
-	inline void RotateAroundAxisDegrees(const DirectX::XMVECTOR& axis, float angle) { RotateInWorldSpace(Quaternion::FromAxisAngle(axis, angle * DEG2RAD)); }
-	inline void RotateAroundAxisRadians(const DirectX::XMFLOAT3& axis, float angle) { DirectX::XMVECTOR Axis = XMLoadFloat3(&axis); RotateInWorldSpace(Quaternion::FromAxisAngle(axis, angle)); }
-	inline void RotateAroundAxisDegrees(const DirectX::XMFLOAT3& axis, float angle) { DirectX::XMVECTOR Axis = XMLoadFloat3(&axis); RotateInWorldSpace(Quaternion::FromAxisAngle(axis, angle * DEG2RAD)); }
-	inline void RotateAroundLocalXAxisDegrees(float angle)  { RotateInLocalSpace(Quaternion::FromAxisAngle(XAxis, std::forward<float>(angle * DEG2RAD))); }
-	inline void RotateAroundLocalYAxisDegrees(float angle)  { RotateInLocalSpace(Quaternion::FromAxisAngle(YAxis, std::forward<float>(angle * DEG2RAD))); }
-	inline void RotateAroundLocalZAxisDegrees(float angle)  { RotateInLocalSpace(Quaternion::FromAxisAngle(ZAxis, std::forward<float>(angle * DEG2RAD))); }
-	inline void RotateAroundGlobalXAxisDegrees(float angle) { RotateAroundAxisDegrees(XAxis, std::forward<float>(angle)); }
-	inline void RotateAroundGlobalYAxisDegrees(float angle) { RotateAroundAxisDegrees(YAxis, std::forward<float>(angle)); }
-	inline void RotateAroundGlobalZAxisDegrees(float angle) { RotateAroundAxisDegrees(ZAxis, std::forward<float>(angle)); }
-	inline void RotateInWorldSpace(const Quaternion& q) { _rotation = q * _rotation; }
-	inline void RotateInLocalSpace(const Quaternion& q) { _rotation = _rotation * q; }
-	inline void ResetPosition() { _position = DirectX::XMFLOAT3(0, 0, 0); }
-	inline void ResetRotation() { _rotation = Quaternion::Identity(); }
-	inline void ResetScale() { _scale = DirectX::XMFLOAT3(1, 1, 1); }
-	inline void Reset() { ResetScale(); ResetRotation(); ResetPosition(); }
+	void RotateAroundPointAndAxis(const XMVECTOR& axis, float angle, const XMVECTOR& point);
+
+	void RotateAroundAxisRadians (const XMVECTOR& axis, float angle) 
+	{ 
+		RotateInWorldSpace(XMQuaternionRotationAxis(axis, angle));
+	}
+
+	void RotateAroundAxisDegrees(const XMVECTOR& axis, float angle) 
+	{ 
+		RotateInWorldSpace(XMQuaternionRotationAxis(axis, angle * DEG2RAD));
+	}
+
+	void RotateAroundAxisRadians(const XMFLOAT3& axis, float angle) 
+	{ 
+		XMVECTOR Axis = XMLoadFloat3(&axis);
+		RotateInWorldSpace(XMQuaternionRotationAxis(XMLoadFloat3(&axis), angle));
+	}
+
+	void RotateAroundAxisDegrees(const XMFLOAT3& axis, float angle) 
+	{ 
+		XMVECTOR Axis = XMLoadFloat3(&axis);
+		RotateInWorldSpace(XMQuaternionRotationAxis(XMLoadFloat3(&axis), angle * DEG2RAD));
+	}
+
+	void RotateAroundLocalXAxisDegrees(float angle)  
+	{ 
+		RotateInLocalSpace(XMQuaternionRotationAxis(XMLoadFloat3(&XAxis), (angle * DEG2RAD)));
+	}
+
+	void RotateAroundLocalYAxisDegrees(float angle)  
+	{ 
+		RotateInLocalSpace(XMQuaternionRotationAxis(XMLoadFloat3(&YAxis), (angle * DEG2RAD)));
+	}
+
+	void RotateAroundLocalZAxisDegrees(float angle)  
+	{ 
+		RotateInLocalSpace(XMQuaternionRotationAxis(XMLoadFloat3(&ZAxis), (angle * DEG2RAD)));
+	}
+
+	void RotateAroundGlobalXAxisDegrees(float angle) 
+	{ 
+		RotateAroundAxisDegrees(XAxis, angle);
+	}
+
+	void RotateAroundGlobalYAxisDegrees(float angle) 
+	{ 
+		RotateAroundAxisDegrees(YAxis, angle);
+	}
+
+	void RotateAroundGlobalZAxisDegrees(float angle) 
+	{ 
+		RotateAroundAxisDegrees(ZAxis, angle);
+	}
+
+	void RotateInWorldSpace(const XMVECTOR& q) { _rotation = q * _rotation; }
+	void RotateInLocalSpace(const XMVECTOR& q) { _rotation = _rotation * q; }
+
+	void ResetPosition() { _position = XMFLOAT3(0, 0, 0); }
+	void ResetRotation() { _rotation = XMVECTOR{ 0.0f,0.0f, 0.0f, 1.0f }; }
+	void ResetScale() { _scale = XMFLOAT3(1, 1, 1); }
+	void Reset() { ResetScale(); ResetRotation(); ResetPosition(); }
 	
-	DirectX::XMMATRIX WorldTransformationMatrix() const;
-	DirectX::XMMATRIX WorldTransformationMatrix_NoScale() const;
-	DirectX::XMMATRIX RotationMatrix() const;
-	static DirectX::XMMATRIX NormalMatrix(const DirectX::XMMATRIX& world);
-	//----------------------------------------------------------------------------------------------------------------
-	// DATA
-	//----------------------------------------------------------------------------------------------------------------
-	DirectX::XMFLOAT3       _position;
-	Quaternion              _rotation;
-	DirectX::XMFLOAT3       _scale;
+	XMMATRIX WorldTransformationMatrix() const;
+	XMMATRIX WorldTransformationMatrix_NoScale() const;
+	XMMATRIX RotationMatrix() const;
+	static XMMATRIX NormalMatrix(const XMMATRIX& world);
+	
+	XMFLOAT3       _position;
+	XMVECTOR       _rotation;
+	XMFLOAT3       _scale;
 };

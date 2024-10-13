@@ -124,7 +124,7 @@ void ThreadPool::Destroy()
 {
 	mbStopWorkers.store(true);
 
-	mSignal.NotifyAll();
+	mCondVar.notify_all();
 
 	for (auto& worker : mWorkers)
 	{
@@ -135,8 +135,9 @@ void ThreadPool::Destroy()
 void ThreadPool::RunRemainingTasksOnThisThread()
 {
 	Task task; 
-	while (mTaskQueue.TryPopTask(task))
-	{ 
+	while (mTaskQueue.IsQueueEmpty())
+	{
+		mTaskQueue.PopTask(task);
 		task(); 
 		mTaskQueue.OnTaskComplete(); 
 	}
@@ -145,41 +146,31 @@ void ThreadPool::Execute()
 {
 	Task task;
 
+	std::unique_lock lock(mMtx, std::defer_lock);
+
 	while (!mbStopWorkers)
 	{
-		mSignal.Wait([&] { return mbStopWorkers || !mTaskQueue.IsQueueEmpty(); });
+		lock.lock();
+		mCondVar.wait(lock,[&] { return mbStopWorkers || !mTaskQueue.IsQueueEmpty(); });
 
 		if (mbStopWorkers)
 			break;
 		
-		if (!mTaskQueue.TryPopTask(task))
-		{
-			// Spurious wake-ups can happen before a notify_one() is called on the mSignal.
-			// This means we can run into the following scenario:
-			//- We push one item to the mTaskQueue but we're yet to call NotifyOne() on mSignal on the producer thread
-			//- Random wake up of the thread(s) happens
-			//- mSignal.condition_variable.wait() no longer blocks as the queue is no longer empty
-			//- the first thread succeeds in TryPopTask(), but the rest of them will fail.
-			//- if we don't check for queue.empty() in TryPopTask(), then std::queue will throw 'front() called on empty queue'
-			continue;
-		}
+		mTaskQueue.PopTask(task);
+
+		lock.unlock();
 
 		task();
 		mTaskQueue.OnTaskComplete();
 	}
 }
 
-bool TaskQueue::TryPopTask(Task& task)
+void TaskQueue::PopTask(Task& task)
 {
 	std::lock_guard<std::mutex> lk(mutex);
 	
-	if (queue.empty())
-		return false;
-	
 	task = std::move(queue.front());
 	queue.pop();
-
-	return true;
 }
 
 std::vector<std::pair<size_t, size_t>> PartitionWorkItemsIntoRanges(size_t NumWorkItems, size_t NumWorkerThreadCount)

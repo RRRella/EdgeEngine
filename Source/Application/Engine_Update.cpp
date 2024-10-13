@@ -119,7 +119,6 @@ void Engine::UpdateThread_PostUpdate()
 	// compute visibility 
 }
 
-
 void Engine::Load_SceneData_Dispatch()
 {
 	//mUpdateWorkerThreads.AddTask([&]() { Sleep(2000); Log::Info("Worker SLEEP done!"); }); // simulate 2second loading time
@@ -127,7 +126,7 @@ void Engine::Load_SceneData_Dispatch()
 	{
 		const int NumBackBuffer_WndMain = mRenderer.GetSwapChainBackBufferCount(mpWinMain);
 
-		// TODO: initialize window scene data here for now, should update this to proper location later on (Scene probably?)
+		// TODO: initialize window scene data here for now
 		FFrameData data[2];
 		data[0].SwapChainClearColor = { 0.07f, 0.07f, 0.07f, 1.0f };
 		
@@ -139,7 +138,7 @@ void Engine::Load_SceneData_Dispatch()
 		const XMVECTOR     CUBE_ROTATION_AXIS = XMVector3Normalize(XMLoadFloat3(&CUBE_ROTATION_VECTOR));
 		data[0].TFCube = Transform(
 			CUBE_POSITION
-			, Quaternion::FromAxisAngle(CUBE_ROTATION_AXIS, CUBE_ROTATION_DEGREES * DEG2RAD)
+			, XMQuaternionRotationAxis(CUBE_ROTATION_AXIS, CUBE_ROTATION_DEGREES * DEG2RAD)
 			, XMFLOAT3(CUBE_SCALE, CUBE_SCALE, CUBE_SCALE)
 		);
 		CameraData camData = {};
@@ -163,14 +162,12 @@ void Engine::Load_SceneData_Join()
 {
 }
 
-
 void Engine::LoadLoadingScreenData()
 {
 	FLoadingScreenData data;
 
 	data.SwapChainClearColor = { 0.0f, 0.2f, 0.4f, 1.0f };
 
-	srand(static_cast<unsigned>(time(NULL)));
 	const std::string LoadingScreenTextureFilePath = "Data/Textures/LoadingScreen/0.png";
 	TextureID texID = mRenderer.CreateTextureFromFile(LoadingScreenTextureFilePath.c_str());
 	SRV_ID    srvID = mRenderer.CreateAndInitializeSRV(texID);
@@ -179,10 +176,6 @@ void Engine::LoadLoadingScreenData()
 	const int NumBackBuffer_WndMain = mRenderer.GetSwapChainBackBufferCount(mpWinMain);
 	mScene_MainWnd.mLoadingScreenData.resize(NumBackBuffer_WndMain, data);
 }
-
-
-// ===============================================================================================================================
-
 
 void MainWindowScene::Update()
 {

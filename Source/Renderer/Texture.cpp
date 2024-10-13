@@ -111,20 +111,10 @@ void Texture::Create(const TextureCreateDesc& desc, const void* pData /*= nullpt
     {
         const UINT64 UploadBufferSize = GetRequiredIntermediateSize(mpTexture, 0, 1);
 
-#if 1
         UINT8* pUploadBufferMem = desc.pUploadHeap->Suballocate(SIZE_T(UploadBufferSize), D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
         if (pUploadBufferMem == NULL)
         {
-
-            // TODO:
-            // We ran out of mem in the upload heap, flush it and try allocating mem from it again
-#if 0
-            desc.pUploadHeap->UploadToGPUAndWait();
-            pUploadBufferMem = desc.pUploadHeap->Suballocate(SIZE_T(UploadBufferSize), D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
-            assert(pUploadBufferMem);
-#else
             assert(false);
-#endif    
         }
 
         UINT64 UplHeapSize;
@@ -147,15 +137,6 @@ void Texture::Create(const TextureCreateDesc& desc, const void* pData /*= nullpt
         CD3DX12_TEXTURE_COPY_LOCATION Src(desc.pUploadHeap->GetResource(), placedTex2D);
         desc.pUploadHeap->GetCommandList()->CopyTextureRegion(&Dst, 0, 0, 0, &Src, NULL);
 
-#else
-        D3D12_SUBRESOURCE_DATA textureSubresourceData = {};
-        textureSubresourceData.pData = pData;
-        textureSubresourceData.RowPitch = imageBytesPerRow;
-        textureSubresourceData.SlicePitch = imageBytesPerRow * desc.Desc.Height;
-
-        UpdateSubresources(pCmd, mpTexture, textureUpload, 0, 0, 1, &textureSubresourceData);
-#endif
-
         D3D12_RESOURCE_BARRIER textureBarrier = {};
         textureBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
         textureBarrier.Transition.pResource = mpTexture;
@@ -165,7 +146,6 @@ void Texture::Create(const TextureCreateDesc& desc, const void* pData /*= nullpt
         pCmd->ResourceBarrier(1, &textureBarrier);
     }
 }
-
 
 void Texture::Destroy()
 {
@@ -180,9 +160,6 @@ void Texture::Destroy()
         mpAlloc = nullptr;
     }
 }
-
-
-
 
 void Texture::InitializeSRV(uint32 index, CBV_SRV_UAV* pRV, D3D12_SHADER_RESOURCE_VIEW_DESC* pSRVDesc)
 {
@@ -226,105 +203,4 @@ void Texture::InitializeDSV(uint32 index, DSV* pRV, int ArraySlice /*= 1*/)
 
     pDevice->Release();
 }
-
-#if 0
-void Texture::CreateRTV(uint32_t index, RTV* pRV, D3D12_RENDER_TARGET_VIEW_DESC* pRtvDesc)
-{
-    ID3D12Device* pDevice;
-    m_pResource->GetDevice(__uuidof(*pDevice), reinterpret_cast<void**>(&pDevice));
-
-    pDevice->CreateRenderTargetView(m_pResource, pRtvDesc, pRV->GetCPUDescHandle(index));
-
-    pDevice->Release();
-}
-
-void Texture::CreateUAV(uint32_t index, Texture* pCounterTex, CBV_SRV_UAV* pRV, D3D12_UNORDERED_ACCESS_VIEW_DESC* pUavDesc)
-{
-    ID3D12Device* pDevice;
-    m_pResource->GetDevice(__uuidof(*pDevice), reinterpret_cast<void**>(&pDevice));
-
-    pDevice->CreateUnorderedAccessView(m_pResource, pCounterTex ? pCounterTex->GetResource() : NULL, pUavDesc, pRV->GetCPUDescHandle(index));
-
-    pDevice->Release();
-}
-
-void Texture::CreateRTV(uint32_t index, RTV* pRV, int mipLevel, int arraySize, int firstArraySlice)
-{
-    D3D12_RESOURCE_DESC texDesc = m_pResource->GetDesc();
-    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-    rtvDesc.Format = texDesc.Format;
-    if (texDesc.DepthOrArraySize == 1)
-    {
-        assert(arraySize == -1);
-        assert(firstArraySlice == -1);
-        if (texDesc.SampleDesc.Count == 1)
-        {
-            rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-            rtvDesc.Texture2D.MipSlice = (mipLevel == -1) ? 0 : mipLevel;
-        }
-        else
-        {
-            rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
-            assert(mipLevel == -1);
-        }
-    }
-    else
-    {
-        rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
-        rtvDesc.Texture2DArray.ArraySize = arraySize;
-        rtvDesc.Texture2DArray.FirstArraySlice = firstArraySlice;
-        rtvDesc.Texture2DArray.MipSlice = (mipLevel == -1) ? 0 : mipLevel;
-    }
-
-    CreateRTV(index, pRV, &rtvDesc);
-}
-#endif
-
-// ================================================================================================================================================
-
-//
-// STATIC
-//
-
-// from Microsoft's D3D12HelloTexture
-std::vector<uint8> Texture::GenerateTexture_Checkerboard(uint Dimension)
-{
-    constexpr UINT TexturePixelSizeInBytes = 4; // byte/px
-    const UINT TextureWidth = Dimension;
-    const UINT TextureHeight = Dimension;
-
-    const UINT rowPitch = TextureWidth * TexturePixelSizeInBytes;
-    const UINT cellPitch = rowPitch >> 3;        // The width of a cell in the checkboard texture.
-    const UINT cellHeight = TextureWidth >> 3;    // The height of a cell in the checkerboard texture.
-    const UINT textureSize = rowPitch * TextureHeight;
-
-    std::vector<UINT8> data(textureSize);
-    UINT8* pData = &data[0];
-
-    for (UINT n = 0; n < textureSize; n += TexturePixelSizeInBytes)
-    {
-        UINT x = n % rowPitch;
-        UINT y = n / rowPitch;
-        UINT i = x / cellPitch;
-        UINT j = y / cellHeight;
-
-        if (i % 2 == j % 2)
-        {
-            pData[n + 0] = 0x00;    // R
-            pData[n + 1] = 0x00;    // G
-            pData[n + 2] = 0x00;    // B
-            pData[n + 3] = 0xff;    // A
-        }
-        else
-        {
-            pData[n + 0] = 0xff;    // R
-            pData[n + 1] = 0xff;    // G
-            pData[n + 2] = 0xff;    // B
-            pData[n + 3] = 0xff;    // A
-        }
-    }
-
-    return data;
-}
-
 

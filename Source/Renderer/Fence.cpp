@@ -6,12 +6,7 @@
 void Fence::Create(ID3D12Device* pDevice, const char* pDebugName)
 {
     mFenceValue = 0;
-    //ThrowIfFailed(
-        pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mpFence))
-    //)
-    ;
-    //SetName(mpFence, pDebugName);
-    //mHEvent = CreateEventEx(nullptr, "FENCE_EVENT0", FALSE, EVENT_ALL_ACCESS);
+    pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mpFence));
     mHEvent = CreateEventEx(nullptr, FALSE, FALSE, EVENT_ALL_ACCESS);
 }
 
@@ -24,11 +19,7 @@ void Fence::Destroy()
 void Fence::Signal(ID3D12CommandQueue* pCommandQueue)
 {
     ++mFenceValue;
-    //ThrowIfFailed(
-        pCommandQueue->Signal(mpFence, mFenceValue)
-
-    //)
-    ;
+    pCommandQueue->Signal(mpFence, mFenceValue);
 }
 
 
@@ -43,8 +34,5 @@ void Fence::WaitOnCPU(UINT64 FenceWaitValue)
 
 void Fence::WaitOnGPU(ID3D12CommandQueue* pCommandQueue)
 {
-    //ThrowIfFailed(
-        pCommandQueue->Wait(mpFence, mFenceValue)
-    //);
-    ;
+    pCommandQueue->Wait(mpFence, mFenceValue);
 }

@@ -10,30 +10,6 @@
 template<typename R> bool is_ready(std::future<R> const& f) { return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready; }
 
 
-// --------------------------------------------------------------------------------------------------------------------------------------
-//
-// Sync Objects
-//
-//---------------------------------------------------------------------------------------------------------------------------------------
-// 
-// Wraps a std::conditional_variable with a std::mutex
-//
-class Signal
-{
-public:
-	inline void NotifyOne() { cv.notify_one(); };
-	inline void NotifyAll() { cv.notify_all(); };
-
-	inline void Wait()               { std::unique_lock<std::mutex> lk(this->mtx); this->cv.wait(lk); }
-	inline void Wait(bool(*pPred)()) { std::unique_lock<std::mutex> lk(this->mtx); this->cv.wait(lk, pPred); }
-	template<class Functor>  // https://stackoverflow.com/questions/6458612/c0x-proper-way-to-receive-a-lambda-as-parameter-by-reference
-	inline void Wait(Functor fn)    { std::unique_lock<std::mutex> lk(this->mtx); this->cv.wait(lk, fn); }
-
-private:
-	std::mutex mtx;
-	std::condition_variable cv;
-};
-
 //
 // Synchronization Object similar to std::mutex except it allows multiple threads instead of just one
 //
@@ -71,7 +47,7 @@ class TaskQueue
 public:
 	template<class T>
 	void AddTask(std::shared_ptr<T>& pTask);
-	bool TryPopTask(Task& task);
+	void PopTask(Task& task);
 
 	inline bool IsQueueEmpty()      const { std::unique_lock<std::mutex> lock(mutex); return queue.empty(); }
 	inline int  GetNumActiveTasks() const { return activeTasks; }
@@ -124,7 +100,8 @@ public:
 private:
 	void Execute(); // workers run Execute();
 
-	Signal                   mSignal;
+	std::mutex               mMtx;
+	std::condition_variable  mCondVar;
 	std::atomic<bool>        mbStopWorkers;
 	TaskQueue                mTaskQueue;
 	std::vector<std::thread> mWorkers;
@@ -143,7 +120,7 @@ decltype(auto) ThreadPool::AddTask(T&& task)
 	mTaskQueue.AddTask(pTask);
 	//Log::Info("[%s] TaskQueue::AddTask()", this->mThreadPoolName.c_str());
 
-	mSignal.NotifyOne();
+	mCondVar.notify_one();
 	//Log::Info("[%s] Signal::NotifyOne()", this->mThreadPoolName.c_str());
 	return pTask->get_future();
 }

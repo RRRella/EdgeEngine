@@ -82,26 +82,23 @@ public:
 	Camera();
 	~Camera(void);
 	void InitializeCamera(const CameraData& data, int ViewportX, int ViewportY);
-	void SetOthoMatrix(int screenWidth, int screenHeight, float screenNear, float screenFar);
 	void SetProjectionMatrix(float fovy, float screenAspect, float screenNear, float screenFar);
-	void SetProjectionMatrixHFov(float fovx, float screenAspectInverse, float screenNear, float screenFar);
-	// updates View Matrix @mMatView
+	
 	void Update(float dt);
 	DirectX::XMFLOAT3 GetPositionF() const;
 	DirectX::XMMATRIX GetViewMatrix() const;
 	DirectX::XMMATRIX GetViewInverseMatrix() const;
 	DirectX::XMMATRIX GetProjectionMatrix() const;
-	// returns World Space frustum plane set 
-	//
+	
 	FrustumPlaneset GetViewFrustumPlanes() const;
 	
 	void SetPosition(float x, float y, float z);
 	void Rotate(float yaw, float pitch, const float dt);
-	void Reset();	// resets camera transform to initial position & orientation
+	void Reset();
 public:
-	float Drag;				// 15.0f
-	float AngularSpeedDeg;	// 40.0f
-	float MoveSpeed;		// 1000.0f
+	float Drag;				
+	float AngularSpeedDeg;	
+	float MoveSpeed;		
 private:
 	void Move(const float dt);
 	void Rotate(const float dt);

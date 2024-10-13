@@ -7,9 +7,6 @@
     <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Quaternion.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Platform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -46,9 +43,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Camera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Quaternion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Platform.h">

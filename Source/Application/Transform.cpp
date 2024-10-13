@@ -1,10 +1,11 @@
 #include "Transform.h"
-using namespace DirectX;
-Transform::Transform(const XMFLOAT3& position, const Quaternion& rotation, const XMFLOAT3& scale)
+
+
+Transform::Transform(const XMFLOAT3& position, const XMVECTOR& rotation, const XMFLOAT3& scale)
 	: _position(position)
 	, _rotation(rotation)
 	, _scale(scale)
-	//, Component(ComponentType::TRANSFORM, "Transform")
+	
 {}
 Transform::~Transform() {}
 Transform & Transform::operator=(const Transform & t)
@@ -36,8 +37,8 @@ void Transform::RotateAroundPointAndAxis(const XMVECTOR& axis, float angle, cons
 { 
 	XMVECTOR R = XMLoadFloat3(&_position);
 	R -= point; // R = _position - point;
-	const Quaternion rot = Quaternion::FromAxisAngle(axis, angle);
-	R = rot.TransformVector(R);
+	const XMVECTOR rot = XMQuaternionRotationAxis(axis, angle);
+	R = XMVector3Rotate(R, rot);
 	R = point + R;
 	XMStoreFloat3(&_position, R);
 }
@@ -45,23 +46,19 @@ XMMATRIX Transform::WorldTransformationMatrix() const
 {
 	XMVECTOR scale = XMLoadFloat3(&_scale);
 	XMVECTOR translation = XMLoadFloat3(&_position);
-	Quaternion Q = _rotation;
-	XMVECTOR rotation = XMVectorSet(Q.V.x, Q.V.y, Q.V.z, Q.S);
 	XMVECTOR rotOrigin = XMVectorZero();
-	return XMMatrixAffineTransformation(scale, rotOrigin, rotation, translation);
+	return XMMatrixAffineTransformation(scale, rotOrigin, _rotation, translation);
 }
 DirectX::XMMATRIX Transform::WorldTransformationMatrix_NoScale() const
 {
 	XMVECTOR scale = XMVectorSet(1.0f, 1.0f, 1.0f, 0.0f);
 	XMVECTOR translation = XMLoadFloat3(&_position);
-	Quaternion Q = _rotation;
-	XMVECTOR rotation = XMVectorSet(Q.V.x, Q.V.y, Q.V.z, Q.S);
 	XMVECTOR rotOrigin = XMVectorZero();
-	return XMMatrixAffineTransformation(scale, rotOrigin, rotation, translation);
+	return XMMatrixAffineTransformation(scale, rotOrigin, _rotation, translation);
 }
 XMMATRIX Transform::RotationMatrix() const
 {
-	return _rotation.Matrix();
+	return XMMatrixRotationQuaternion(_rotation);
 }
 // builds normal matrix from world matrix, ignoring translation
 // and using inverse-transpose of rotation/scale matrix
