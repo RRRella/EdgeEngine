@@ -33,7 +33,6 @@ struct FEngineSettings
 	FGraphicsSettings gfx;
 
 	FWindowSettings WndMain;
-	FWindowSettings WndDebug;
 
 	bool bShowDebugWindow = false;
 

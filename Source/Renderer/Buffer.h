@@ -147,7 +147,7 @@ private:
     uint32_t m_numberOfBackBuffers;
 
     uint32_t m_memAllocatedInFrame;
-    uint32_t m_allocatedMemPerBackBuffer[4];
+    uint32_t m_allocatedMemPerBackBuffer[3];
 
 };
 

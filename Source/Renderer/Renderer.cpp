@@ -90,7 +90,7 @@ void Renderer::Initialize(const FRendererInitializeParameters& params)
 	const size_t NumWindows = params.Windows.size();
 	for(size_t i = 0; i< NumWindows; ++i)
 	{
-		const FWindowRepresentation& wnd = params.Windows[i];
+		FWindowRepresentation& wnd = const_cast<FWindowRepresentation&>(params.Windows[i]);
 		
 
 		FWindowRenderContext ctx = {};
@@ -105,8 +105,8 @@ void Renderer::Initialize(const FRendererInitializeParameters& params)
 		swapChainDesc.pDevice = ctx.pDevice->GetDevicePtr();
 		swapChainDesc.pWindow = &wnd;
 		swapChainDesc.pCmdQueue = &ctx.PresentQueue;
-		swapChainDesc.bVSync = ctx.bVsync;
-		swapChainDesc.bFullscreen = wnd.bFullscreen;
+		swapChainDesc.pWindow->bVSync = ctx.bVsync;
+		swapChainDesc.pWindow->bFullscreen = wnd.bFullscreen;
 		ctx.SwapChain.Create(swapChainDesc);
 
 		// Create command allocators
@@ -126,6 +126,7 @@ void Renderer::Initialize(const FRendererInitializeParameters& params)
 
 		// Create command lists
 		pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, ctx.mCommandAllocatorsGFX[0], nullptr, IID_PPV_ARGS(&ctx.pCmdList_GFX));
+		
 		ctx.pCmdList_GFX->SetName(L"RenderContext::CmdListGFX");
 		ctx.pCmdList_GFX->Close();
 
@@ -559,37 +560,6 @@ void Renderer::LoadPSOs()
 
 void Renderer::LoadDefaultResources()
 {
-	ID3D12Device* pDevice = mDevice.GetDevicePtr();
-
-	const UINT sizeX = 1024;
-	const UINT sizeY = 1024;
-	
-	D3D12_RESOURCE_DESC textureDesc = {};
-	{
-		textureDesc = {};
-		textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		textureDesc.Alignment = 0;
-		textureDesc.Width = sizeX;
-		textureDesc.Height = sizeY;
-		textureDesc.DepthOrArraySize = 1;
-		textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		textureDesc.MipLevels = 1;
-		textureDesc.SampleDesc.Count = 1;
-		textureDesc.SampleDesc.Quality = 0;
-		textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-		textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-	}	
-
-#if 0
-	// HDR texture from file
-	{
-		const std::string TextureFilePath = "Data/Textures/sIBL/Walk_Of_Fame/Mans_Outside_2k.hdr";
-		tDesc.TexName = (TextureFilePath);
-		TextureID texID = this->CreateTextureFromFile(TextureFilePath);
-		this->CreateAndInitializeSRV(texID);
-	}
-#endif
-
 	mStaticHeap_VertexBuffer.UploadData(mHeapUpload.GetCommandList());
 	mStaticHeap_IndexBuffer.UploadData(mHeapUpload.GetCommandList());
 }
@@ -609,11 +579,6 @@ ID3D12DescriptorHeap* Renderer::GetDescHeap(EResourceHeapType HeapType)
 }
 
 
-
-
-
-
-
 // ================================================================================================================================================
 
 //
@@ -631,8 +596,6 @@ std::vector< FGPUInfo > Renderer::EnumerateDX12Adapters(bool bEnableDebugLayer, 
 	int iAdapter = 0;                  // we'll start looking for DX12  compatible graphics devices starting at index 0
 	bool bAdapterFound = false;        // set this to true when a good one was found
 
-	// https://docs.microsoft.com/en-us/windows/win32/direct3ddxgi/d3d10-graphics-programming-guide-dxgi
-	// https://stackoverflow.com/questions/42354369/idxgifactory-versions
 	// Chuck Walbourn: For DIrect3D 12, you can assume CreateDXGIFactory2 and IDXGIFactory4 or later is supported. 
 	IDXGIFactory6* pDxgiFactory; // DXGIFactory6 supports preferences when querying devices: DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE
 	UINT DXGIFlags = 0;
@@ -656,8 +619,7 @@ std::vector< FGPUInfo > Renderer::EnumerateDX12Adapters(bool bEnableDebugLayer, 
 		GPUs.push_back(GPUInfo);
 	};
 
-	// Find GPU with highest perf: https://stackoverflow.com/questions/49702059/dxgi-integred-pAdapter
-	// https://docs.microsoft.com/en-us/windows/win32/api/dxgi1_6/nf-dxgi1_6-idxgifactory6-enumadapterbygpupreference
+	// Find GPU with highest perf
 	while (pDxgiFactory->EnumAdapterByGpuPreference(iAdapter, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&pAdapter)) != DXGI_ERROR_NOT_FOUND)
 	{
 		DXGI_ADAPTER_DESC1 desc;

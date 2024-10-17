@@ -34,12 +34,6 @@ struct FStartupParameters
 	uint8 bOverrideENGSetting_bFullscreen         : 1;
 	uint8 bOverrideENGSetting_PreferredDisplay    : 1;
 
-	uint8 bOverrideENGSetting_bDebugWindowEnable          : 1;
-	uint8 bOverrideENGSetting_DebugWindowHeight           : 1;
-	uint8 bOverrideENGSetting_DebugWindowWidth            : 1;
-	uint8 bOverrideENGSetting_DebugWindowbFullscreen      : 1;
-	uint8 bOverrideENGSetting_DebugWindowPreferredDisplay : 1;
-
 	uint8 bOverrideENGSetting_bAutomatedTest      : 1;
 	uint8 bOverrideENGSetting_bTestFrames         : 1;
 };

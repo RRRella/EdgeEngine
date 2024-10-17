@@ -35,9 +35,6 @@ FWindowRepresentation::FWindowRepresentation(const std::unique_ptr<Window>& pWnd
     , bFullscreen(bFullscreenIn)
 {}
 
-// The programming model for swap chains in D3D12 is not identical to that in earlier versions of D3D. 
-// The programming convenience, for example, of supporting automatic resource rotation that was present 
-// in D3D10 and D3D11 is now NOT supported.
 bool SwapChain::Create(const FSwapChainCreateDesc& desc)
 {
     assert(desc.pDevice);
@@ -45,10 +42,10 @@ bool SwapChain::Create(const FSwapChainCreateDesc& desc)
     assert(desc.pCmdQueue && desc.pCmdQueue->pQueue);
     assert(desc.numBackBuffers > 0 && desc.numBackBuffers <= NUM_MAX_BACK_BUFFERS);
 
-    this->mpDevice = desc.pDevice;
-    this->mHwnd = desc.pWindow->hwnd;
-    this->mNumBackBuffers = desc.numBackBuffers;
-    this->mpPresentQueue = desc.pCmdQueue->pQueue;
+    mpDevice = desc.pDevice;
+    mHwnd = desc.pWindow->hwnd;
+    mNumBackBuffers = desc.numBackBuffers;
+    mpPresentQueue = desc.pCmdQueue->pQueue;
 
     HRESULT hr = {};
     IDXGIFactory4* pDxgiFactory = nullptr;
@@ -59,12 +56,6 @@ bool SwapChain::Create(const FSwapChainCreateDesc& desc)
         return false;
     }
 
-    // https://docs.microsoft.com/en-us/windows/win32/direct3ddxgi/dxgi-flip-model
-    // https://docs.microsoft.com/en-us/windows/win32/direct3ddxgi/dxgi-1-4-improvements
-    // DXGI_SWAP_EFFECT_FLIP_DISCARD    should be preferred when applications fully render over the backbuffer before 
-    //                                  presenting it or are interested in supporting multi-adapter scenarios easily.
-    // DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL should be used by applications that rely on partial presentation optimizations 
-    //                                  or regularly read from previously presented backbuffers.
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     swapChainDesc.BufferCount = desc.numBackBuffers;
     swapChainDesc.Height = desc.pWindow->height;
@@ -74,31 +65,15 @@ bool SwapChain::Create(const FSwapChainCreateDesc& desc)
     swapChainDesc.SampleDesc.Count = 1;
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    swapChainDesc.Flags = desc.bVSync
+    swapChainDesc.Flags = desc.pWindow->bVSync
         ? 0
         : DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-    if (desc.bFullscreen)
+
+    if (desc.pWindow->bFullscreen)
     {
-        // https://docs.microsoft.com/en-us/windows/win32/direct3darticles/dxgi-best-practices#full-screen-issues
-        // Also, developers may create a full-screen swap chain and give a specific resolution, only to find that 
-        // DXGI defaults to the desktop resolution regardless of the numbers passed in. Unless otherwise instructed, 
-        // DXGI defaults to the desktop resolution for full-screen swap chains.
-        // When creating a full - screen swap chain, the Flags member of the DXGI_SWAP_CHAIN_DESC structure must 
-        // be set to DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH to override DXGI's default behavior.
-        #if 0
         swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-        #endif
     }
 
-    // SwapChain creation methods for the newer DXGI_SWAP_CHAIN_DESC1
-    // https://docs.microsoft.com/en-us/windows/win32/api/dxgi1_2/nf-dxgi1_2-idxgifactory2-createswapchainforhwnd
-    // https://docs.microsoft.com/en-us/windows/win32/api/dxgi1_2/nf-dxgi1_2-idxgifactory2-createswapchainforcorewindow
-    // https://docs.microsoft.com/en-us/windows/win32/api/dxgi1_2/nf-dxgi1_2-idxgifactory2-createswapchainforcomposition
-    //
-    // CoreWindow  -> Windows Store Apps
-    // HWND        -> Windows Desktop Apps
-    // Composition -> XAML & DirectComposition Apps
-    //
     IDXGISwapChain1* pSwapChain = nullptr;
     hr = pDxgiFactory->CreateSwapChainForHwnd(
         desc.pCmdQueue->pQueue
@@ -109,7 +84,6 @@ bool SwapChain::Create(const FSwapChainCreateDesc& desc)
         , &pSwapChain
     );
 
-    // https://docs.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgifactory-makewindowassociation
     UINT WndAssocFlags = DXGI_MWA_NO_ALT_ENTER; // We're gonna handle the Alt+Enter ourselves instead of DXGI
     pDxgiFactory->MakeWindowAssociation(desc.pWindow->hwnd, WndAssocFlags);
 
@@ -170,7 +144,7 @@ bool SwapChain::Create(const FSwapChainCreateDesc& desc)
     this->mRenderTargets.resize(this->mNumBackBuffers, nullptr);
 
     // Resize will handle RTV creation logic if its a Fullscreen SwapChain
-    if (desc.bFullscreen)
+    if (desc.pWindow->bFullscreen)
     {
         // TODO: the SetFullscreen here doesn't trigger WM_SIZE event, hence
         //       we have to call here. For now, we use the specified w and h,
@@ -179,7 +153,6 @@ bool SwapChain::Create(const FSwapChainCreateDesc& desc)
         this->SetFullscreen(true, desc.pWindow->width, desc.pWindow->height);
         this->Resize(desc.pWindow->width, desc.pWindow->height);
     }
-    // create RTVs if non-fullscreen swapchain
     else
     {
         CreateRenderTargetViews();
@@ -232,7 +205,6 @@ void SwapChain::Resize(int w, int h)
     this->mICurrentBackBuffer = mpSwapChain->GetCurrentBackBufferIndex();
 }
 
-// https://docs.microsoft.com/de-de/windows/win32/direct3darticles/dxgi-best-practices#full-screen-issues
 void SwapChain::SetFullscreen(bool bState, int FSRecoveryWindowWidth, int FSRecoveryWindowHeight)
 {
     HRESULT hr = {};
@@ -333,7 +305,6 @@ HRESULT SwapChain::Present(bool bVSync)
 
     if (hr != S_OK)
     {
-        // https://docs.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiswapchain-present
         switch (hr)
         {
         case DXGI_ERROR_DEVICE_RESET:

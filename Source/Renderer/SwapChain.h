@@ -15,24 +15,23 @@ class Window;
 
 struct FWindowRepresentation
 {
+	FWindowRepresentation(const std::unique_ptr<Window>& pWnd, bool bVSync, bool bFullscreen);
+
 	HWND hwnd; int width, height;
 	bool bVSync;
 	bool bFullscreen;
-	FWindowRepresentation(const std::unique_ptr<Window>& pWnd, bool bVSync, bool bFullscreen);
 };
+
 struct FSwapChainCreateDesc
 {
 	ID3D12Device*                pDevice   = nullptr;
-	const FWindowRepresentation* pWindow   = nullptr;
+    FWindowRepresentation*       pWindow   = nullptr;
 	CommandQueue*                pCmdQueue = nullptr;
 
 	int numBackBuffers;
-	bool bVSync;
-	bool bFullscreen;
 };
 
 
-// https://docs.microsoft.com/en-us/windows/win32/direct3d12/swap-chains
 class SwapChain
 {
 public:
@@ -47,7 +46,6 @@ public:
 	void MoveToNextFrame();
 	void WaitForGPU();
 
-	/* Getters */ 
 	inline int                           GetNumBackBuffers()                const { return mNumBackBuffers; }
 	inline int                           GetCurrentBackBufferIndex()        const { return mICurrentBackBuffer; }
 	inline CD3DX12_CPU_DESCRIPTOR_HANDLE GetCurrentBackBufferRTVHandle()    const { return CD3DX12_CPU_DESCRIPTOR_HANDLE(mpDescHeapRTV->GetCPUDescriptorHandleForHeapStart(), GetCurrentBackBufferIndex(), mpDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV)); }
@@ -59,7 +57,7 @@ private:
 	void DestroyRenderTargetViews();
 
 private:
-	friend class Window; // Window can access pSwapChain.
+	friend class Window;
 
 	HWND                         mHwnd               = NULL;
 	unsigned short               mNumBackBuffers     = 0;
@@ -79,5 +77,4 @@ private:
 	IDXGISwapChain4*             mpSwapChain      = nullptr;
 	ID3D12CommandQueue*          mpPresentQueue   = nullptr;
 	DXGI_FORMAT                  mSwapChainFormat = DXGI_FORMAT_UNKNOWN;
-	// TODO: HDR: https://docs.microsoft.com/en-us/windows/win32/direct3darticles/high-dynamic-range
 };

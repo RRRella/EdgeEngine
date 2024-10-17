@@ -99,12 +99,14 @@ void Texture::Create(const TextureCreateDesc& desc, const void* pData /*= nullpt
         pClearValue,
         &mpAlloc,
         IID_PPV_ARGS(&mpTexture));
-    SetName(mpTexture, desc.TexName.c_str());
+    
     if (FAILED(hr))
     {
         Log::Error("Couldn't create texture: ", desc.TexName.c_str());
         return;
     }
+
+    SetName(mpTexture, desc.TexName.c_str());
 
     // upload the data
     if (pData)

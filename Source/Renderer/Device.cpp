@@ -48,14 +48,12 @@ bool Device::Create(const FDeviceCreateDesc& desc)
     std::vector<FGPUInfo> vAdapters = Renderer::EnumerateDX12Adapters(desc.bEnableDebugLayer);
 
     // TODO: implement software device as fallback ---------------------------------
-    // https://walbourn.github.io/anatomy-of-direct3d-12-create-device/
     assert(vAdapters.size() > 0);
-    //       implement software device as fallback ---------------------------------
 
     FGPUInfo& adapter = vAdapters[0];
 
     // throws COM error but returns S_OK : Microsoft C++ exception: _com_error at memory location 0x
-    this->mpAdapter = std::move(adapter.pAdapter);
+    this->mpAdapter = adapter.pAdapter;
     hr = D3D12CreateDevice(this->mpAdapter, adapter.MaxSupportedFeatureLevel, IID_PPV_ARGS(&mpDevice));
 
     if (!SUCCEEDED(hr))

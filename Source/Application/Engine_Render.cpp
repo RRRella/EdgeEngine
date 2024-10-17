@@ -81,33 +81,15 @@ void Engine::RenderThread_Inititalize()
 
 
 	// ---------- Window initialziation
-	auto fnHandleWindowTransitions = [&](std::unique_ptr<Window>& pWin, const FWindowSettings& settings)
+	if (!mpWinMain) return;
+
+	// Borderless fullscreen transitions are handled through Window object
+	// Exclusive  fullscreen transitions are handled through the Swapchain
+	if (mSettings.WndMain.DisplayMode == EDisplayMode::BORDERLESS_FULLSCREEN)
 	{
-		if (!pWin) return;
-
-		// TODO: generic solution to multi window/display settings. 
-		//       For now, simply prevent debug wnd occupying main wnd's display.
-		if (mpWinMain->IsFullscreen()
-			&& (mSettings.WndMain.PreferredDisplay == mSettings.WndDebug.PreferredDisplay)
-			&& settings.IsDisplayModeFullscreen()
-			&& pWin != mpWinMain)
-		{
-			Log::Warning("Debug window and Main window cannot be Fullscreen on the same display!");
-			pWin->SetFullscreen(false);
-			// TODO: as a more graceful fallback, move it to the next monitor and keep fullscreen
-			return;
-		}
-
-		// Borderless fullscreen transitions are handled through Window object
-		// Exclusive  fullscreen transitions are handled through the Swapchain
-		if (settings.DisplayMode == EDisplayMode::BORDERLESS_FULLSCREEN)
-		{
-			// TODO: preferred screen impl
-			if (pWin) pWin->ToggleWindowedFullscreen();
-		}
-	};
-
-	fnHandleWindowTransitions(mpWinMain, mSettings.WndMain);
+		// TODO: preferred screen impl
+		if (mpWinMain) mpWinMain->ToggleWindowedFullscreen();
+	}
 
 	RenderThread_LoadWindowSizeDependentResources(mpWinMain->GetHWND(), mpWinMain->GetWidth(), mpWinMain->GetHeight());
 }
@@ -194,9 +176,6 @@ void Engine::RenderThread_PreRender()
 
 void Engine::RenderThread_Render()
 {
-	const int NUM_BACK_BUFFERS = mRenderer.GetSwapChainBackBufferCount(mpWinMain);
-	const int FRAME_DATA_INDEX  = mNumRenderLoopsExecuted % NUM_BACK_BUFFERS;
-
 	RenderThread_RenderMainWindow();
 }
 
@@ -417,7 +396,7 @@ HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 	pCmd->SetPipelineState(mRenderer.GetPSO(EBuiltinPSOs::HELLO_WORLD_CUBE_PSO));
 	pCmd->SetGraphicsRootSignature(mRenderer.GetRootSignature(2));
 	pCmd->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-	pCmd->SetGraphicsRootDescriptorTable(0, mRenderer.GetSRV(0).GetGPUDescHandle());
+	pCmd->SetGraphicsRootDescriptorTable(0, mRenderer.GetSRV(FrameData.CubeTexture).GetGPUDescHandle());
 	pCmd->SetGraphicsRootConstantBufferView(1, cbAddr);
 
 	pCmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -486,7 +465,7 @@ void Engine::RenderThread_HandleEvents()
 		}
 	}
 	// Process Window Resize
-	if (pResizeEvent)
+	if (pResizeEvent && pResizeEvent->width != 0 && pResizeEvent->height != 0)
 	{
 		RenderThread_HandleResizeWindowEvent(pResizeEvent.get());
 	}

@@ -72,12 +72,6 @@ void Engine::InititalizeEngineSettings(const FStartupParameters& Params)
 	s.WndMain.PreferredDisplay = 0;
 	sprintf_s(s.WndMain.Title , "Engine %s-%s", ENGINE_VERSION, BUILD_CONFIG);
 
-	s.WndDebug.Width  = 600;
-	s.WndDebug.Height = 600;
-	s.WndDebug.DisplayMode = EDisplayMode::WINDOWED;
-	s.WndDebug.PreferredDisplay = 1;
-	sprintf_s(s.WndDebug.Title, "Debugging");
-
 	s.bAutomatedTestRun = false;
 	s.NumAutomatedTestFrames = 100; // default num frames to run if -Test is specified in cmd line params
 
@@ -93,12 +87,6 @@ void Engine::InititalizeEngineSettings(const FStartupParameters& Params)
 	if (paramFile.bOverrideENGSetting_MainWindowHeight)            s.WndMain.Height           = pf.WndMain.Height;
 	if (paramFile.bOverrideENGSetting_bFullscreen)                 s.WndMain.DisplayMode      = pf.WndMain.DisplayMode;
 	if (paramFile.bOverrideENGSetting_PreferredDisplay)            s.WndMain.PreferredDisplay = pf.WndMain.PreferredDisplay;
-
-	if (paramFile.bOverrideENGSetting_bDebugWindowEnable)          s.bShowDebugWindow          = pf.bShowDebugWindow;
-	if (paramFile.bOverrideENGSetting_DebugWindowWidth)            s.WndDebug.Width            = pf.WndDebug.Width;
-	if (paramFile.bOverrideENGSetting_DebugWindowHeight)           s.WndDebug.Height           = pf.WndDebug.Height;
-	if (paramFile.bOverrideENGSetting_DebugWindowbFullscreen)      s.WndDebug.DisplayMode      = pf.WndDebug.DisplayMode;
-	if (paramFile.bOverrideENGSetting_DebugWindowPreferredDisplay) s.WndDebug.PreferredDisplay = pf.WndDebug.PreferredDisplay;
 
 	if (paramFile.bOverrideENGSetting_bAutomatedTest)              s.bAutomatedTestRun = pf.bAutomatedTestRun;
 	if (paramFile.bOverrideENGSetting_bTestFrames)
@@ -117,12 +105,6 @@ void Engine::InititalizeEngineSettings(const FStartupParameters& Params)
 	if (Params.bOverrideENGSetting_MainWindowHeight)            s.WndMain.Height           = p.WndMain.Height;
 	if (Params.bOverrideENGSetting_bFullscreen)                 s.WndMain.DisplayMode      = p.WndMain.DisplayMode;
 	if (Params.bOverrideENGSetting_PreferredDisplay)            s.WndMain.PreferredDisplay = p.WndMain.PreferredDisplay;
-	
-	if (Params.bOverrideENGSetting_bDebugWindowEnable)          s.bShowDebugWindow          = p.bShowDebugWindow;
-	if (Params.bOverrideENGSetting_DebugWindowWidth)            s.WndDebug.Width            = p.WndDebug.Width;
-	if (Params.bOverrideENGSetting_DebugWindowHeight)           s.WndDebug.Height           = p.WndDebug.Height;
-	if (Params.bOverrideENGSetting_DebugWindowbFullscreen)      s.WndDebug.DisplayMode      = p.WndDebug.DisplayMode;
-	if (Params.bOverrideENGSetting_DebugWindowPreferredDisplay) s.WndDebug.PreferredDisplay = p.WndDebug.PreferredDisplay;
 
 	if (Params.bOverrideENGSetting_bAutomatedTest)     s.bAutomatedTestRun    = p.bAutomatedTestRun;
 	if (Params.bOverrideENGSetting_bTestFrames)
@@ -144,7 +126,7 @@ void Engine::InitializeApplicationWindows(const FStartupParameters& Params)
 		desc.pfnWndProc = WndProc;
 		desc.bFullscreen = settings.DisplayMode == EDisplayMode::EXCLUSIVE_FULLSCREEN;
 		desc.preferredDisplay = settings.PreferredDisplay;
-		pWin.reset(new Window(settings.Title, desc));
+		pWin = std::make_unique<Window>(settings.Title, desc);
 	};
 
 	fnInitializeWindows(mSettings.WndMain, Params.hExeInstance, mpWinMain);
@@ -323,37 +305,6 @@ FStartupParameters Engine::ParseEngineSettingsFile()
 				params.bOverrideENGSetting_PreferredDisplay = true;
 				params.EngineSettings.WndMain.PreferredDisplay = ParseInt(SettingValue);
 			}
-
-
-			if (SettingName == "DebugWindow")
-			{
-				params.bOverrideENGSetting_bDebugWindowEnable = true;
-				params.EngineSettings.bShowDebugWindow = ParseBool(SettingValue);
-			}
-			if (SettingName == "DebugWindowWidth")
-			{
-				params.bOverrideENGSetting_DebugWindowWidth = true;
-				params.EngineSettings.WndDebug.Width = ParseInt(SettingValue);
-			}
-			if (SettingName == "DebugWindowHeight")
-			{
-				params.bOverrideENGSetting_DebugWindowHeight = true;
-				params.EngineSettings.WndDebug.Height = ParseInt(SettingValue);
-			}
-			if (SettingName == "DebugWindowDisplayMode")
-			{
-				if (S_LOOKUP_STR_TO_DISPLAYMODE.find(SettingValue) != S_LOOKUP_STR_TO_DISPLAYMODE.end())
-				{
-					params.bOverrideENGSetting_DebugWindowbFullscreen = true;
-					params.EngineSettings.WndDebug.DisplayMode = S_LOOKUP_STR_TO_DISPLAYMODE.at(SettingValue);
-				}
-			}
-			if (SettingName == "DebugWindowPreferredDisplay")
-			{
-				params.bOverrideENGSetting_DebugWindowPreferredDisplay = true;
-				params.EngineSettings.WndDebug.PreferredDisplay = ParseInt(SettingValue);
-			}
-			
 		}
 	}
 	else

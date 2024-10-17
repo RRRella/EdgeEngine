@@ -19,12 +19,6 @@
     <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Timer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\tinyxml2\tinyxml2.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\miniz\miniz.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Log.h">
@@ -52,15 +46,6 @@
       <Filter>Libs</Filter>
     </ClInclude>
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image_write.h">
-      <Filter>Libs</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\tinyxml2\tinyxml2.h">
-      <Filter>Libs</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\tinyexr\tinyexr.h">
-      <Filter>Libs</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\miniz\miniz.h">
       <Filter>Libs</Filter>
     </ClInclude>
   </ItemGroup>

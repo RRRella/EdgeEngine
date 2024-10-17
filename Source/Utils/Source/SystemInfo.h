@@ -55,10 +55,9 @@ namespace SystemInfo
 		IDXGIAdapter1* pAdapter;
 		D3D_FEATURE_LEVEL MaxSupportedFeatureLevel; // todo: bool d3d12_0 ?
 
-		// https://gamedev.stackexchange.com/questions/31625/get-video-chipset-manufacturer-in-direct3d
-		inline bool IsAMD()    const { return VendorID == 0x1002; }
-		inline bool IsNVidia() const { return VendorID == 0x10DE; }
-		inline bool IsIntel()  const { return VendorID == 0x163C || VendorID == 0x8086 || VendorID == 0x8087; }
+		bool IsAMD()    const { return VendorID == 0x1002; }
+		bool IsNVidia() const { return VendorID == 0x10DE; }
+		bool IsIntel()  const { return VendorID == 0x163C || VendorID == 0x8086 || VendorID == 0x8087; }
 	};
 
 

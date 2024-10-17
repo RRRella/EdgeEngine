@@ -317,7 +317,7 @@ void RingBufferWithTabs::Create(uint32_t numberOfBackBuffers, uint32_t memTotalS
     m_numberOfBackBuffers = numberOfBackBuffers;
     //init mem per frame tracker
     m_memAllocatedInFrame = 0;
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 3; i++)
         m_allocatedMemPerBackBuffer[i] = 0;
     m_mem.Create(memTotalSize);
 }

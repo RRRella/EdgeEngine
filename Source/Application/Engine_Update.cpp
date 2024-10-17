@@ -40,6 +40,7 @@ void Engine::UpdateThread_Inititalize()
 	// busy lock until render thread is initialized
 	while (!mbRenderThreadInitialized); 
 	LoadLoadingScreenData();
+	LoadSceneData();
 
 	// Do not show windows until we have the loading screen data ready.
 	mpWinMain->Show();
@@ -106,61 +107,55 @@ void Engine::UpdateThread_UpdateAppState()
 
 	}
 
-
-	else
-	{
-		// update scene data
-	}
-
 }
 
 void Engine::UpdateThread_PostUpdate()
 {
-	// compute visibility 
+	 
 }
 
 void Engine::Load_SceneData_Dispatch()
 {
-	//mUpdateWorkerThreads.AddTask([&]() { Sleep(2000); Log::Info("Worker SLEEP done!"); }); // simulate 2second loading time
-	mUpdateWorkerThreads.AddTask([&]()
-	{
-		const int NumBackBuffer_WndMain = mRenderer.GetSwapChainBackBufferCount(mpWinMain);
-
-		// TODO: initialize window scene data here for now
-		FFrameData data[2];
-		data[0].SwapChainClearColor = { 0.07f, 0.07f, 0.07f, 1.0f };
-		
-		// Cube Data
-		constexpr XMFLOAT3 CUBE_POSITION = XMFLOAT3(0, 0, 4);
-		constexpr float    CUBE_SCALE = 1.0f;
-		constexpr XMFLOAT3 CUBE_ROTATION_VECTOR = XMFLOAT3(1, 1, 1);
-		constexpr float    CUBE_ROTATION_DEGREES = 60.0f;
-		const XMVECTOR     CUBE_ROTATION_AXIS = XMVector3Normalize(XMLoadFloat3(&CUBE_ROTATION_VECTOR));
-		data[0].TFCube = Transform(
-			CUBE_POSITION
-			, XMQuaternionRotationAxis(CUBE_ROTATION_AXIS, CUBE_ROTATION_DEGREES * DEG2RAD)
-			, XMFLOAT3(CUBE_SCALE, CUBE_SCALE, CUBE_SCALE)
-		);
-		CameraData camData = {};
-		camData.nearPlane = 0.01f;
-		camData.farPlane = 1000.0f;
-		camData.x = 0.0f; camData.y = 3.0f; camData.z = -5.0f;
-		camData.pitch = 10.0f;
-		camData.yaw = 0.0f;
-		camData.fovH_Degrees = 60.0f;
-		data[0].SceneCamera.InitializeCamera(camData, mpWinMain->GetWidth(), mpWinMain->GetHeight());
-
-		mScene_MainWnd.mFrameData.resize(NumBackBuffer_WndMain, data[0]);
-
-		data[1].SwapChainClearColor = { 0.20f, 0.21f, 0.21f, 1.0f };
-
-		mWindowUpdateContextLookup[mpWinMain->GetHWND()] = &mScene_MainWnd;
-	});
 }
 
-void Engine::Load_SceneData_Join()
+void Engine::LoadSceneData()
 {
+	const int NumBackBuffer_WndMain = mRenderer.GetSwapChainBackBufferCount(mpWinMain);
+	const int currentBackBufferIDX = mRenderer.GetWindowSwapChain(mpWinMain->GetHWND()).GetCurrentBackBufferIndex();
+
+	// TODO: initialize window scene data here for now
+	FFrameData data;
+	data.SwapChainClearColor = { 0.07f, 0.07f, 0.07f, 1.0f };
+
+	// Cube Data
+	constexpr XMFLOAT3 CUBE_POSITION = XMFLOAT3(0, 0, 4);
+	constexpr float    CUBE_SCALE = 1.0f;
+	constexpr XMFLOAT3 CUBE_ROTATION_VECTOR = XMFLOAT3(1, 1, 1);
+	constexpr float    CUBE_ROTATION_DEGREES = 60.0f;
+	const XMVECTOR     CUBE_ROTATION_AXIS = XMVector3Normalize(XMLoadFloat3(&CUBE_ROTATION_VECTOR));
+	data.TFCube = Transform(
+		CUBE_POSITION
+		, XMQuaternionRotationAxis(CUBE_ROTATION_AXIS, CUBE_ROTATION_DEGREES * DEG2RAD)
+		, XMFLOAT3(CUBE_SCALE, CUBE_SCALE, CUBE_SCALE)
+	);
+	CameraData camData = {};
+	camData.nearPlane = 0.01f;
+	camData.farPlane = 1000.0f;
+	camData.x = 0.0f; camData.y = 3.0f; camData.z = -5.0f;
+	camData.pitch = 10.0f;
+	camData.yaw = 0.0f;
+	camData.fovH_Degrees = 60.0f;
+	data.SceneCamera.InitializeCamera(camData, mpWinMain->GetWidth(), mpWinMain->GetHeight());
+
+	TextureID texID = mRenderer.CreateTextureFromFile("Data/Textures/1.png");
+	SRV_ID    srvID = mRenderer.CreateAndInitializeSRV(texID);
+	data.CubeTexture = srvID;
+
+	mScene_MainWnd.mFrameData.resize(NumBackBuffer_WndMain, data);
+
+	mWindowUpdateContextLookup[mpWinMain->GetHWND()] = &mScene_MainWnd;
 }
+
 
 void Engine::LoadLoadingScreenData()
 {
@@ -168,7 +163,7 @@ void Engine::LoadLoadingScreenData()
 
 	data.SwapChainClearColor = { 0.0f, 0.2f, 0.4f, 1.0f };
 
-	const std::string LoadingScreenTextureFilePath = "Data/Textures/LoadingScreen/0.png";
+	const std::string LoadingScreenTextureFilePath = "Data/Textures/0.png";
 	TextureID texID = mRenderer.CreateTextureFromFile(LoadingScreenTextureFilePath.c_str());
 	SRV_ID    srvID = mRenderer.CreateAndInitializeSRV(texID);
 	data.SRVLoadingScreen = srvID;

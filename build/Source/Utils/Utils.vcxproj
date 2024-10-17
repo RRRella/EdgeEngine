@@ -288,14 +288,9 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\SystemInfo.cpp" />
     <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Image.cpp" />
     <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Timer.cpp" />
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\tinyxml2\tinyxml2.cpp" />
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\miniz\miniz.c" />
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image.h" />
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image_resize.h" />
     <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image_write.h" />
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\tinyxml2\tinyxml2.h" />
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\tinyexr\tinyexr.h" />
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\miniz\miniz.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\Dev\Local\EdgeEngine\build\ZERO_CHECK.vcxproj">

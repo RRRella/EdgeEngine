@@ -21,6 +21,7 @@ struct FFrameData
 {
 	Camera SceneCamera;
 	Transform TFCube;
+	SRV_ID CubeTexture = INVALID_ID;
 	std::array<float, 4> SwapChainClearColor;
 };
 struct FLoadingScreenData
@@ -160,7 +161,7 @@ private:
 	// todo: generic window mngmt
 
 	// render
-	Renderer                 mRenderer;
+	Renderer                   mRenderer;
 	BuiltinMeshArray_t         mBuiltinMeshes;
 	BuiltinMeshNameArray_t     mBuiltinMeshNames;
 
@@ -196,7 +197,7 @@ private:
 	void                     InitializeBuiltinMeshes();
 	void                     LoadLoadingScreenData(); // data is loaded in parallel but it blocks the calling thread until load is complete
 	void                     Load_SceneData_Dispatch();
-	void                     Load_SceneData_Join();
+	void					 LoadSceneData();
 	
 	HRESULT                  RenderThread_RenderMainWindow_LoadingScreen(FWindowRenderContext& ctx);
 	HRESULT                  RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx);

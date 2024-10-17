@@ -54,8 +54,6 @@ struct FWindowRenderContext
 	CommandQueue PresentQueue;
 
 
-	// 1x allocator per command-recording-thread, multiplied by num swapchain backbuffers
-	// Source: https://gpuopen.com/performance/
 	std::vector<ID3D12CommandAllocator*> mCommandAllocatorsGFX;
 	std::vector<ID3D12CommandAllocator*> mCommandAllocatorsCompute;
 	std::vector<ID3D12CommandAllocator*> mCommandAllocatorsCopy;
