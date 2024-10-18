@@ -391,7 +391,8 @@ HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 	D3D12_GPU_VIRTUAL_ADDRESS cbAddr = {};
 	void* pMem = nullptr;
 	ctx.mDynamicHeap_ConstantBuffer.AllocConstantBuffer(sizeof(Consts), &pMem, &cbAddr);
-	*((Consts*)pMem) = consts;
+	memcpy(pMem, &consts, sizeof(Consts));
+
 	pCmd->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 	pCmd->SetPipelineState(mRenderer.GetPSO(EBuiltinPSOs::HELLO_WORLD_CUBE_PSO));
 	pCmd->SetGraphicsRootSignature(mRenderer.GetRootSignature(2));

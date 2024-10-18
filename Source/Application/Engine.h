@@ -10,6 +10,7 @@
 #include "Camera.h"
 
 #include "../Utils/Source/Multithreading.h"
+#include "../Utils/Source/Timer.h"
 #include "Source/Renderer/Renderer.h"
 
 #include <memory>
@@ -127,13 +128,13 @@ public:
 
 	// - Updates timer
 	// - Updates input state reading from Main Thread's input queue
-	void UpdateThread_PreUpdate();
+	void UpdateThread_PreUpdate(float& dt);
 	
 	// - Updates program state (init/load/sim/unload/exit)
 	// - Starts loading tasks
 	// - Animates loading screen
 	// - Updates scene data
-	void UpdateThread_UpdateAppState();
+	void UpdateThread_UpdateAppState(const float& dt);
 
 	// - Computes visibility per SceneView
 	void UpdateThread_PostUpdate();
@@ -172,7 +173,8 @@ private:
 	std::atomic<bool>          mbLoadingLevel;
 	FEngineSettings            mSettings;
 	EAppState                  mAppState;
-	SystemInfo::FSystemInfo  mSysInfo;
+	SystemInfo::FSystemInfo    mSysInfo;
+	Timer mTimer;
 
 	// scene
 	MainWindowScene             mScene_MainWnd;
@@ -182,12 +184,10 @@ private:
 	// events
 	BufferedContainer<std::queue<std::unique_ptr<IEvent>>, std::unique_ptr<IEvent>> mWinEventQueue;
 
-private:
 	// Reads EngineSettings.ini from next to the executable and returns a 
 	// FStartupParameters struct as it readily has override booleans for engine settings
 	static FStartupParameters ParseEngineSettingsFile();
 
-private:
 	void                     InititalizeEngineSettings(const FStartupParameters& Params);
 	void                     InitializeApplicationWindows(const FStartupParameters& Params);
 

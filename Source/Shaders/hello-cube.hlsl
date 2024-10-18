@@ -31,5 +31,7 @@ PSInput VSMain(float4 position : POSITION, float4 color : COLOR, float2 uv : TEX
 }
 float4 PSMain(PSInput input) : SV_TARGET
 {
-    return float4(texColor.SampleLevel(Sampler, input.uv, 0).rgb, 1);
+    float4 ColorTex = texColor.SampleLevel(Sampler, input.uv, 0);
+    
+    return float4(ColorTex /* * input.color*/);
 }

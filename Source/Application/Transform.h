@@ -53,13 +53,11 @@ public:
 
 	void RotateAroundAxisRadians(const XMFLOAT3& axis, float angle) 
 	{ 
-		XMVECTOR Axis = XMLoadFloat3(&axis);
 		RotateInWorldSpace(XMQuaternionRotationAxis(XMLoadFloat3(&axis), angle));
 	}
 
 	void RotateAroundAxisDegrees(const XMFLOAT3& axis, float angle) 
 	{ 
-		XMVECTOR Axis = XMLoadFloat3(&axis);
 		RotateInWorldSpace(XMQuaternionRotationAxis(XMLoadFloat3(&axis), angle * DEG2RAD));
 	}
 
@@ -93,8 +91,16 @@ public:
 		RotateAroundAxisDegrees(ZAxis, angle);
 	}
 
-	void RotateInWorldSpace(const XMVECTOR& q) { _rotation = q * _rotation; }
-	void RotateInLocalSpace(const XMVECTOR& q) { _rotation = _rotation * q; }
+	void RotateInWorldSpace(const XMVECTOR& q) 
+	{ 
+		_rotation = XMQuaternionMultiply(q , _rotation);
+		_rotation = XMQuaternionNormalize(_rotation);
+	}
+	void RotateInLocalSpace(const XMVECTOR& q) 
+	{ 
+		_rotation = XMQuaternionMultiply(_rotation, q);
+		_rotation = XMQuaternionNormalize(_rotation);
+	}
 
 	void ResetPosition() { _position = XMFLOAT3(0, 0, 0); }
 	void ResetRotation() { _rotation = XMVECTOR{ 0.0f,0.0f, 0.0f, 1.0f }; }
