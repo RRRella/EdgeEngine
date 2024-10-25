@@ -193,12 +193,12 @@ void SwapChain::Resize(int w, int h)
         mFenceValues[i] = mFenceValues[mpSwapChain->GetCurrentBackBufferIndex()];
     }
 
-    const bool bVsync = false; // TODO
+    const bool bVsync = true; // TODO
     mpSwapChain->ResizeBuffers(
         (UINT)this->mFenceValues.size(),
         w, h,
         this->mSwapChainFormat,
-        bVsync ? 0 : (DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING /*| DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH*/)
+        bVsync ? 0 : (DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING | DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH)
     );
 
     CreateRenderTargetViews();

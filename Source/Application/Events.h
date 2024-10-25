@@ -16,6 +16,8 @@ enum EEventType
 	WINDOW_RESIZE_EVENT = 0,
 	TOGGLE_FULLSCREEN_EVENT,
 	SET_FULLSCREEN_EVENT,
+	KEY_DOWN_EVENT,
+	KEY_UP_EVENT,
 
 	NUM_EVENT_TYPES
 };
@@ -30,7 +32,6 @@ struct IEvent
 
 struct WindowResizeEvent : public IEvent
 {
-	WindowResizeEvent() : IEvent(EEventType::WINDOW_RESIZE_EVENT) {}
 	WindowResizeEvent(int w, int h, HWND hwnd_) : IEvent(EEventType::WINDOW_RESIZE_EVENT), width(w), height(h), hwnd(hwnd_) {}
 
 	int width  = 0;
@@ -48,7 +49,20 @@ struct ToggleFullscreenEvent : public IEvent
 
 struct SetFullscreenEvent : public IEvent
 {
-	SetFullscreenEvent() : IEvent(EEventType::SET_FULLSCREEN_EVENT) {}
 	SetFullscreenEvent(bool bFullscreen) : IEvent(EEventType::SET_FULLSCREEN_EVENT), bToggleValue(bFullscreen) {}
 	bool bToggleValue = false;
+};
+
+struct KeyDownEvent : public IEvent
+{
+	KeyDownEvent(HWND hwnd_, WPARAM wparam_) : IEvent(EEventType::KEY_DOWN_EVENT), hwnd(hwnd_), wparam(wparam_) {}
+	WPARAM wparam = 0;
+	HWND hwnd = 0;
+};
+struct KeyUpEvent : public IEvent
+{
+	KeyUpEvent(HWND hwnd_, WPARAM wparam_) : IEvent(EEventType::KEY_UP_EVENT), hwnd(hwnd_), wparam(wparam_) {}
+
+	WPARAM wparam = 0;
+	HWND hwnd = 0;
 };

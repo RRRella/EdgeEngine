@@ -214,8 +214,8 @@ void Renderer::OnWindowSizeChanged(HWND hwnd, unsigned w, unsigned h)
 	if (!CheckContext(hwnd)) return;
 	FWindowRenderContext& ctx = mRenderContextLookup.at(hwnd);
 
-	ctx.MainRTResolutionX = w; // TODO: RenderScale
-	ctx.MainRTResolutionY = h; // TODO: RenderScale
+	ctx.MainRTResolutionX = w;
+	ctx.MainRTResolutionY = h;
 }
 
 SwapChain& Renderer::GetWindowSwapChain(HWND hwnd) { return mRenderContextLookup.at(hwnd).SwapChain; }

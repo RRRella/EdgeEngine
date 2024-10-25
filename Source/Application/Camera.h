@@ -1,5 +1,7 @@
 #pragma once
 #include <DirectXMath.h>
+#include <array>
+
 struct FrustumPlaneset
 {	// plane equations: aX + bY + cZ + d = 0
 	DirectX::XMFLOAT4 abcd[6];	// r, l, t, b, n, f
@@ -76,6 +78,13 @@ struct CameraData
 	float x, y, z;
 	float yaw, pitch; // in degrees
 };
+struct CameraInput
+{
+	CameraInput() = delete;
+	CameraInput(const DirectX::XMVECTOR& v) : LocalTranslationVector(v), DeltaMouseXY{ 0, 0 } {}
+	const DirectX::XMVECTOR& LocalTranslationVector;
+	std::array<float, 2> DeltaMouseXY;
+};
 class Camera
 {
 public:
@@ -84,7 +93,7 @@ public:
 	void InitializeCamera(const CameraData& data, int ViewportX, int ViewportY);
 	void SetProjectionMatrix(float fovy, float screenAspect, float screenNear, float screenFar);
 	
-	void Update(float dt);
+	void Update(const float dt, const CameraInput& input);
 	DirectX::XMFLOAT3 GetPositionF() const;
 	DirectX::XMMATRIX GetViewMatrix() const;
 	DirectX::XMMATRIX GetViewInverseMatrix() const;
@@ -100,9 +109,9 @@ public:
 	float AngularSpeedDeg;	
 	float MoveSpeed;		
 private:
-	void Move(const float dt);
-	void Rotate(const float dt);
-	DirectX::XMMATRIX RotMatrix() const;
+	void Move(const float dt, const CameraInput& input);
+	void Rotate(const float dt, const CameraInput& input);
+	DirectX::XMMATRIX GetRotationMatrix() const;
 private:
 	DirectX::XMFLOAT3 mPosition;
 	float mYaw = 0.0f;

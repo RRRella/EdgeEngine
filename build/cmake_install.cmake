@@ -1,4 +1,4 @@
-# Install script for directory: C:/Dev/Local/EdgeEngine
+# Install script for directory: D:/Dev/Local/EdgeEngine
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -34,19 +34,25 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("C:/Dev/Local/EdgeEngine/build/Source/Utils/cmake_install.cmake")
+  include("D:/Dev/Local/EdgeEngine/build/Source/Utils/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("C:/Dev/Local/EdgeEngine/build/Libs/D3D12MemoryAllocator/cmake_install.cmake")
+  include("D:/Dev/Local/EdgeEngine/build/Libs/D3D12MemoryAllocator/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("C:/Dev/Local/EdgeEngine/build/Source/Renderer/cmake_install.cmake")
+  include("D:/Dev/Local/EdgeEngine/build/Source/Renderer/cmake_install.cmake")
 endif()
 
+string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
+       "${CMAKE_INSTALL_MANIFEST_FILES}")
+if(CMAKE_INSTALL_LOCAL_ONLY)
+  file(WRITE "D:/Dev/Local/EdgeEngine/build/install_local_manifest.txt"
+     "${CMAKE_INSTALL_MANIFEST_CONTENT}")
+endif()
 if(CMAKE_INSTALL_COMPONENT)
   if(CMAKE_INSTALL_COMPONENT MATCHES "^[a-zA-Z0-9_.+-]+$")
     set(CMAKE_INSTALL_MANIFEST "install_manifest_${CMAKE_INSTALL_COMPONENT}.txt")
@@ -60,8 +66,6 @@ else()
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
-       "${CMAKE_INSTALL_MANIFEST_FILES}")
-  file(WRITE "C:/Dev/Local/EdgeEngine/build/${CMAKE_INSTALL_MANIFEST}"
+  file(WRITE "D:/Dev/Local/EdgeEngine/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

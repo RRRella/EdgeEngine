@@ -12,6 +12,7 @@
 #include "../Utils/Source/Multithreading.h"
 #include "../Utils/Source/Timer.h"
 #include "Source/Renderer/Renderer.h"
+#include "Input.h"
 
 #include <memory>
 
@@ -86,8 +87,9 @@ public:
 	void OnToggleFullscreen(HWND hWnd) override;
 	void OnWindowMinimize(IWindow* pWnd) override;
 	void OnWindowFocus(IWindow* pWindow) override;
-	void OnWindowKeyDown(WPARAM wParam) override;
 	void OnWindowClose(IWindow* pWindow) override;
+	void OnWindowKeyDown(HWND hwnd, WPARAM wParam) override;
+	void OnWindowKeyUp(HWND hwnd, WPARAM wParam) override;
 	
 
 	void MainThread_Tick();
@@ -135,16 +137,19 @@ public:
 	// - Animates loading screen
 	// - Updates scene data
 	void UpdateThread_UpdateAppState(const float& dt);
+	void UpdateThread_UpdateScene(const float dt);
 
 	// - Computes visibility per SceneView
 	void UpdateThread_PostUpdate();
 
-
+	void UpdateThread_HandleEvents();
 //-----------------------------------------------------------------------
 
 private:
 	using BuiltinMeshArray_t     = std::array<Mesh      , EBuiltInMeshes::NUM_BUILTIN_MESHES>;
 	using BuiltinMeshNameArray_t = std::array<std::string, EBuiltInMeshes::NUM_BUILTIN_MESHES>;
+	using EventQueue_t = BufferedContainer<std::queue<std::unique_ptr<IEvent>>, std::unique_ptr<IEvent>>;
+	using UpdateContextLookup_t = std::unordered_map<HWND, IWindowUpdateContext*>;
 
 	// threads
 	std::thread                mRenderThread;
@@ -177,12 +182,16 @@ private:
 	Timer mTimer;
 
 	// scene
-	MainWindowScene             mScene_MainWnd;
-	std::unordered_map<HWND, IWindowUpdateContext*> mWindowUpdateContextLookup;
-	RenderingResources_MainWindow  mResources_MainWnd;
+	MainWindowScene					mScene_MainWnd;
+	UpdateContextLookup_t			mWindowUpdateContextLookup;
+	RenderingResources_MainWindow   mResources_MainWnd;
+
+	//input
+	Input                          mInput;
 
 	// events
-	BufferedContainer<std::queue<std::unique_ptr<IEvent>>, std::unique_ptr<IEvent>> mWinEventQueue;
+	EventQueue_t	mWinEventQueue;
+	EventQueue_t    mInputEventQueue;
 
 	// Reads EngineSettings.ini from next to the executable and returns a 
 	// FStartupParameters struct as it readily has override booleans for engine settings

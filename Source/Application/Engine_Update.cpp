@@ -1,5 +1,5 @@
 #include "Engine.h"
-
+#include "Math.h"
 #include "../Utils/Source/utils.h"
 
 using namespace DirectX;
@@ -13,6 +13,8 @@ void Engine::UpdateThread_Main()
 	float dt = 0.0f;
 	while (!mbStopAllThreads && !bQuit)
 	{
+		UpdateThread_HandleEvents();
+
 		UpdateThread_PreUpdate(dt);
 
 #if DEBUG_LOG_THREAD_SYNC_VERBOSE
@@ -110,12 +112,33 @@ void Engine::UpdateThread_UpdateAppState(const float& dt)
 
 	else
 	{
-		const int NUM_BACK_BUFFERS = mRenderer.GetSwapChainBackBufferCount(mpWinMain->GetHWND());
-		const int FRAME_DATA_INDEX = mNumUpdateLoopsExecuted % NUM_BACK_BUFFERS;
-		// update scene data
-		mScene_MainWnd.mFrameData[FRAME_DATA_INDEX].TFCube.RotateAroundLocalYAxisDegrees(dt * 100);
+		UpdateThread_UpdateScene(dt);
 	}
 
+}
+
+void Engine::UpdateThread_UpdateScene(const float dt)
+{
+	const int NUM_BACK_BUFFERS = mRenderer.GetSwapChainBackBufferCount(mpWinMain->GetHWND());
+	const int FRAME_DATA_INDEX = mNumUpdateLoopsExecuted % NUM_BACK_BUFFERS;
+	FFrameData& FrameData = mScene_MainWnd.mFrameData[FRAME_DATA_INDEX];
+
+	// handle input
+	XMVECTOR LocalSpaceTranslation = XMVectorSet(0, 0, 0, 0);
+	if (mInput.IsKeyDown(KeyCode::A))		LocalSpaceTranslation += XMLoadFloat3(&LeftVector);
+	if (mInput.IsKeyDown(KeyCode::D))		LocalSpaceTranslation += XMLoadFloat3(&RightVector);
+	if (mInput.IsKeyDown(KeyCode::W))		LocalSpaceTranslation += XMLoadFloat3(&ForwardVector);
+	if (mInput.IsKeyDown(KeyCode::S))		LocalSpaceTranslation += XMLoadFloat3(&BackVector);
+	if (mInput.IsKeyDown(KeyCode::E))		LocalSpaceTranslation += XMLoadFloat3(&UpVector);
+	if (mInput.IsKeyDown(KeyCode::Q))		LocalSpaceTranslation += XMLoadFloat3(&DownVector);
+   
+	// update camera
+	CameraInput camInput(LocalSpaceTranslation);
+	camInput.DeltaMouseXY = mInput.GetMouseDelta();
+	FrameData.SceneCamera.Update(dt, camInput);
+
+	// update scene data
+	FrameData.TFCube.RotateAroundAxisRadians(YAxis, dt * 0.2f * PI);
 }
 
 void Engine::UpdateThread_PostUpdate()
@@ -134,6 +157,38 @@ void Engine::UpdateThread_PostUpdate()
 	const int FRAME_DATA_INDEX = mNumUpdateLoopsExecuted % NUM_BACK_BUFFERS;
 	const int FRAME_DATA_NEXT_INDEX = ((mNumUpdateLoopsExecuted % NUM_BACK_BUFFERS) + 1) % NUM_BACK_BUFFERS;
 	mScene_MainWnd.mFrameData[FRAME_DATA_NEXT_INDEX] = mScene_MainWnd.mFrameData[FRAME_DATA_INDEX];
+
+	// input post update;
+	mInput.PostUpdate();
+}
+
+void Engine::UpdateThread_HandleEvents()
+{
+	// Swap event recording buffers so we can read & process a limited number of events safely.
+	mInputEventQueue.SwapBuffers();
+	std::queue<std::unique_ptr<IEvent>>& q = mInputEventQueue.GetBackContainer();
+	if (q.empty())
+		return;
+	// process the events
+	std::shared_ptr<IEvent> pEvent = nullptr;
+	while (!q.empty())
+	{
+		pEvent = std::move(q.front());
+		q.pop();
+		switch (pEvent->mType)
+		{
+		case KEY_DOWN_EVENT:
+		{
+			std::shared_ptr<KeyDownEvent> p = std::static_pointer_cast<KeyDownEvent>(pEvent);
+			mInput.UpdateKeyDown(static_cast<KeyCode>(p->wparam));
+		} break;
+		case KEY_UP_EVENT:
+		{
+			std::shared_ptr<KeyUpEvent> p = std::static_pointer_cast<KeyUpEvent>(pEvent);
+			mInput.UpdateKeyUp(static_cast<KeyCode>(p->wparam));
+		} break;
+		}
+	}
 }
 
 void Engine::Load_SceneData_Dispatch()

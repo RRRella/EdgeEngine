@@ -1,66 +1,68 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Log.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Log.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\utils.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Multithreading.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Multithreading.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\SystemInfo.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\SystemInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Image.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Image.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Timer.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Timer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Log.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Log.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\utils.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Multithreading.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Multithreading.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\SystemInfo.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\SystemInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Image.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Timer.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Timer.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image.h">
-      <Filter>Libs</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image_resize.h">
-      <Filter>Libs</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image_write.h">
-      <Filter>Libs</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="C:\Dev\Local\EdgeEngine\Source\Utils\CMakeLists.txt" />
+    <CustomBuild Include="D:\Dev\Local\EdgeEngine\Source\Utils\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="D:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image.h">
+      <Filter>Libs</Filter>
+    </Text>
+    <Text Include="D:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image_resize.h">
+      <Filter>Libs</Filter>
+    </Text>
+    <Text Include="D:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image_write.h">
+      <Filter>Libs</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{C2FAD294-CEB9-3DCC-BDA5-7C36090EA025}</UniqueIdentifier>
+      <UniqueIdentifier>{AAF7373F-B9A5-349F-9E80-7953DBCA340F}</UniqueIdentifier>
     </Filter>
     <Filter Include="Libs">
-      <UniqueIdentifier>{1ECD0D66-FFDF-306A-862D-84B5752D4D60}</UniqueIdentifier>
+      <UniqueIdentifier>{F82AF5C7-F02A-3CD3-8F3A-C36C3DC7503F}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{955739CF-2822-3E46-BD8A-AC612E6274B9}</UniqueIdentifier>
+      <UniqueIdentifier>{10E7F20C-4BE3-3E2C-8D9D-C408BAB929CF}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

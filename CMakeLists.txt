@@ -41,6 +41,10 @@ set (HeaderEdgine
     "Source/Application/Events.h"
     "Source/Application/Mesh.h"
     "Source/Application/Geometry.h"
+    "Source/Application/Math.h"
+    "Source/Application/Input.h"
+    "Source/Application/MouseCodes.h"
+    "Source/Application/KeyCodes.h"
 )
 
 set (SourceEdgine
@@ -56,6 +60,7 @@ set (SourceEdgine
     "Source/Application/Events.cpp"
     "Source/Application/Mesh.cpp"
     "Source/Application/Geometry.cpp"
+    "Source/Application/Input.cpp"
 )
 
 
@@ -70,7 +75,7 @@ source_group("Shaders"  FILES ${Shaders})
 
 set_source_files_properties(${Config} PROPERTIES VS_TOOL_OVERRIDE "Text")
 set_source_files_properties(${Shaders} PROPERTIES VS_TOOL_OVERRIDE "Text")
-set_source_files_properties(Data/Resources/Edgine.rc PROPERTIES VS_TOOL_OVERRIDE "Resource compiler")
+set_source_files_properties(Data/Resources/Edgine.rc PROPERTIES VS_TOOL_OVERRIDE "ResourceCompile")
 set_source_files_properties(Data/Icons/Edgine.ico  PROPERTIES VS_TOOL_OVERRIDE "Image")
 
 add_executable( ${PROJECT_NAME} ${HeaderEdgine} ${SourceEdgine} ${Config} ${Resource} ${Shaders} )

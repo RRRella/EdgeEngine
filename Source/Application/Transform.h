@@ -1,20 +1,10 @@
 #pragma once
 #include <DirectXMath.h>
 #include <utility>
+#include "Math.h"
 
 using namespace DirectX;
 
-#define DEG2RAD (XM_PI / 180.0f)
-#define RAD2DEG (180.0f / XM_PI)
-#define PI		XM_PI
-#define PI_DIV2 XM_PIDIV2
-
-constexpr inline XMFLOAT3 UpVector      = XMFLOAT3(0, 1, 0);
-constexpr inline XMFLOAT3 RightVector   = XMFLOAT3(1, 0, 0);
-constexpr inline XMFLOAT3 ForwardVector = XMFLOAT3(0, 0, 1);
-constexpr inline XMFLOAT3 XAxis = XMFLOAT3(1, 0, 0);
-constexpr inline XMFLOAT3 YAxis = XMFLOAT3(0, 1, 0);
-constexpr inline XMFLOAT3 ZAxis = XMFLOAT3(0, 0, 1);
 
 struct Transform
 {

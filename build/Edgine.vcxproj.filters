@@ -1,120 +1,135 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Transform.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Transform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Camera.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Platform.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Platform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Window.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Main.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Engine_Main.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Engine_Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Engine_Render.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Engine_Render.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Engine_Update.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Engine_Update.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Engine_WindowEvents.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Engine_WindowEvents.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Events.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Events.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Mesh.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Application\Geometry.cpp">
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Geometry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Input.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Transform.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\Transform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Camera.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Platform.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\Platform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Window.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Settings.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\Settings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Types.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\Types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Engine.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\Engine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Events.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\Events.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Mesh.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Application\Geometry.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\Geometry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Data\Resources\resource.h">
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\Math.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\Input.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\MouseCodes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Application\KeyCodes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Data\Resources\resource.h">
       <Filter>Resource</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="C:\Dev\Local\EdgeEngine\CMakeLists.txt" />
+    <CustomBuild Include="D:\Dev\Local\EdgeEngine\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="C:\Dev\Local\EdgeEngine\Data\Icons\Edgine.ico">
+    <Image Include="D:\Dev\Local\EdgeEngine\Data\Icons\Edgine.ico">
       <Filter>Resource</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="C:\Dev\Local\EdgeEngine\Data\Resources\Edgine.rc">
+    <ResourceCompile Include="D:\Dev\Local\EdgeEngine\Data\Resources\Edgine.rc">
       <Filter>Resource</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="C:\Dev\Local\EdgeEngine\Data\EngineSettings.ini">
+    <Text Include="D:\Dev\Local\EdgeEngine\Data\EngineSettings.ini">
       <Filter>Config</Filter>
     </Text>
-    <Text Include="C:\Dev\Local\EdgeEngine\Source\Shaders\hello-triangle.hlsl">
+    <Text Include="D:\Dev\Local\EdgeEngine\Source\Shaders\hello-triangle.hlsl">
       <Filter>Shaders</Filter>
     </Text>
-    <Text Include="C:\Dev\Local\EdgeEngine\Source\Shaders\hello-cube.hlsl">
+    <Text Include="D:\Dev\Local\EdgeEngine\Source\Shaders\hello-cube.hlsl">
       <Filter>Shaders</Filter>
     </Text>
-    <Text Include="C:\Dev\Local\EdgeEngine\Source\Shaders\FullscreenTriangle.hlsl">
+    <Text Include="D:\Dev\Local\EdgeEngine\Source\Shaders\FullscreenTriangle.hlsl">
       <Filter>Shaders</Filter>
     </Text>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Config">
-      <UniqueIdentifier>{044AA9E0-10DB-348E-90A4-900D015DA9C6}</UniqueIdentifier>
+      <UniqueIdentifier>{8A9CE49C-831A-3136-92D6-D254CEB05CB3}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{C2FAD294-CEB9-3DCC-BDA5-7C36090EA025}</UniqueIdentifier>
+      <UniqueIdentifier>{AAF7373F-B9A5-349F-9E80-7953DBCA340F}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resource">
-      <UniqueIdentifier>{24BA3BE8-78A5-32F3-A718-1BAC733D7FF7}</UniqueIdentifier>
+      <UniqueIdentifier>{809CE4A1-426E-36C2-A6F9-4ADEDD8278BC}</UniqueIdentifier>
     </Filter>
     <Filter Include="Shaders">
-      <UniqueIdentifier>{C9F90F0D-66A8-3DCA-81D3-FD9438CFA0F8}</UniqueIdentifier>
+      <UniqueIdentifier>{B46C3FD9-5AEB-3CC5-B41F-31F50A3B31E6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{955739CF-2822-3E46-BD8A-AC612E6274B9}</UniqueIdentifier>
+      <UniqueIdentifier>{10E7F20C-4BE3-3E2C-8D9D-C408BAB929CF}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

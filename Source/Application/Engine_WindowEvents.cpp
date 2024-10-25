@@ -1,6 +1,7 @@
 #include "Engine.h"
+#include "Input.h"
 
-
+constexpr int MIN_WINDOW_SIZE = 128;
 
 #define LOG_WINDOW_MESSAGE_EVENTS 0
 static void LogWndMsg(UINT uMsg, HWND hwnd);
@@ -27,9 +28,22 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		if (pWindow->pOwner) pWindow->pOwner->OnWindowResize(hwnd);
 		return 0;
 	}
-
 	case WM_KEYDOWN:
-		if (pWindow->pOwner) pWindow->pOwner->OnWindowKeyDown(wParam);
+		if (pWindow->pOwner) pWindow->pOwner->OnWindowKeyDown(hwnd, wParam);
+		return 0;
+	case WM_KEYUP:
+		if (pWindow->pOwner) pWindow->pOwner->OnWindowKeyUp(hwnd, wParam);
+		return 0;
+		// mouse buttons
+	case WM_MBUTTONDOWN:
+	case WM_LBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+		//if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonDown();
+		return 0;
+	case WM_MBUTTONUP:
+	case WM_RBUTTONUP:
+	case WM_LBUTTONUP:
+		//if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonUp();
 		return 0;
 
 	case WM_SYSKEYDOWN:
@@ -106,8 +120,17 @@ void Engine::OnWindowFocus(IWindow* pWindow)
 }
 
 
-void Engine::OnWindowKeyDown(WPARAM wParam)
+void Engine::OnWindowKeyDown(HWND hwnd, WPARAM wParam)
 {
+	// Due to multi-threading, this thread will record the events and 
+	// Update Thread will process the queue at the beginning of an update loop
+	mInputEventQueue.AddItem(std::make_unique<KeyDownEvent>(hwnd, wParam));
+}
+void Engine::OnWindowKeyUp(HWND hwnd, WPARAM wParam)
+{
+	// Due to multi-threading, this thread will record the events and 
+	// Update Thread will process the queue at the beginning of an update loop
+	mInputEventQueue.AddItem(std::make_unique<KeyUpEvent>(hwnd, wParam));
 }
 
 void Engine::OnWindowClose(IWindow* pWindow)
@@ -127,8 +150,7 @@ void Engine::OnWindowClose(IWindow* pWindow)
 static void LogWndMsg(UINT uMsg, HWND hwnd)
 {
 #if LOG_WINDOW_MESSAGE_EVENTS
-#define HANDLE_CASE(EVENT)\
-case EVENT: Log::Info(#EVENT"\t(0x%04x)\t\t<hwnd=0x%x>", EVENT, hwnd); break
+#define HANDLE_CASE(EVENT)    case EVENT: Log::Info(#EVENT"\t(0x%04x)\t\t<hwnd=0x%x>", EVENT, hwnd); break
 	switch (uMsg)
 	{
 		// https://www.autoitscript.com/autoit3/docs/appendix/WinMsgCodes.htm

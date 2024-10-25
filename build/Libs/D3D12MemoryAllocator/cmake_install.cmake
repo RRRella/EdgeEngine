@@ -1,4 +1,4 @@
-# Install script for directory: C:/Dev/Local/EdgeEngine/Libs/D3D12MemoryAllocator
+# Install script for directory: D:/Dev/Local/EdgeEngine/Libs/D3D12MemoryAllocator
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -34,7 +34,13 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("C:/Dev/Local/EdgeEngine/build/Libs/D3D12MemoryAllocator/src/cmake_install.cmake")
+  include("D:/Dev/Local/EdgeEngine/build/Libs/D3D12MemoryAllocator/src/cmake_install.cmake")
 
 endif()
 
+string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
+       "${CMAKE_INSTALL_MANIFEST_FILES}")
+if(CMAKE_INSTALL_LOCAL_ONLY)
+  file(WRITE "D:/Dev/Local/EdgeEngine/build/Libs/D3D12MemoryAllocator/install_local_manifest.txt"
+     "${CMAKE_INSTALL_MANIFEST_CONTENT}")
+endif()

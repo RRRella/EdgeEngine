@@ -22,7 +22,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{91843902-0746-3625-AABA-ACBA9AB848F9}</ProjectGuid>
+    <ProjectGuid>{E75D3B2A-47FC-32AA-9E63-66153CDDF4CF}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
     <Platform>x64</Platform>
@@ -59,19 +59,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Dev\Local\EdgeEngine\build\Lib\DEBUG\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Dev\Local\EdgeEngine\build\Lib\DEBUG\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Utils.dir\Debug\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Utils</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.lib</TargetExt>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Dev\Local\EdgeEngine\build\Lib\RELEASE\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Dev\Local\EdgeEngine\build\Lib\RELEASE\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Utils.dir\Release\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Utils</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.lib</TargetExt>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Dev\Local\EdgeEngine\build\Lib\MINSIZEREL\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Dev\Local\EdgeEngine\build\Lib\MINSIZEREL\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Utils.dir\MinSizeRel\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Utils</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.lib</TargetExt>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Dev\Local\EdgeEngine\build\Lib\RELWITHDEBINFO\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Dev\Local\EdgeEngine\build\Lib\RELWITHDEBINFO\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Utils.dir\RelWithDebInfo\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Utils</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.lib</TargetExt>
@@ -219,11 +219,11 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CustomBuild Include="C:\Dev\Local\EdgeEngine\Source\Utils\CMakeLists.txt">
+    <CustomBuild Include="D:\Dev\Local\EdgeEngine\Source\Utils\CMakeLists.txt">
       <UseUtf8Encoding>Always</UseUtf8Encoding>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Dev/Local/EdgeEngine/Source/Utils/CMakeLists.txt</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/Dev/Local/EdgeEngine/Source/Utils/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SC:/Dev/Local/EdgeEngine -BC:/Dev/Local/EdgeEngine/build --check-stamp-file C:/Dev/Local/EdgeEngine/build/Source/Utils/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Dev/Local/EdgeEngine -BD:/Dev/Local/EdgeEngine/build --check-stamp-file D:/Dev/Local/EdgeEngine/build/Source/Utils/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -232,11 +232,11 @@ exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Dev\Local\EdgeEngine\build\Source\Utils\CMakeFiles\generate.stamp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Dev\Local\EdgeEngine\build\Source\Utils\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Dev/Local/EdgeEngine/Source/Utils/CMakeLists.txt</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/Dev/Local/EdgeEngine/Source/Utils/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SC:/Dev/Local/EdgeEngine -BC:/Dev/Local/EdgeEngine/build --check-stamp-file C:/Dev/Local/EdgeEngine/build/Source/Utils/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Dev/Local/EdgeEngine -BD:/Dev/Local/EdgeEngine/build --check-stamp-file D:/Dev/Local/EdgeEngine/build/Source/Utils/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -245,11 +245,11 @@ exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Dev\Local\EdgeEngine\build\Source\Utils\CMakeFiles\generate.stamp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Dev\Local\EdgeEngine\build\Source\Utils\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
-      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/Dev/Local/EdgeEngine/Source/Utils/CMakeLists.txt</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/Dev/Local/EdgeEngine/Source/Utils/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SC:/Dev/Local/EdgeEngine -BC:/Dev/Local/EdgeEngine/build --check-stamp-file C:/Dev/Local/EdgeEngine/build/Source/Utils/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Dev/Local/EdgeEngine -BD:/Dev/Local/EdgeEngine/build --check-stamp-file D:/Dev/Local/EdgeEngine/build/Source/Utils/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -258,11 +258,11 @@ exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Dev\Local\EdgeEngine\build\Source\Utils\CMakeFiles\generate.stamp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Dev\Local\EdgeEngine\build\Source\Utils\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
-      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/Dev/Local/EdgeEngine/Source/Utils/CMakeLists.txt</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/Dev/Local/EdgeEngine/Source/Utils/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SC:/Dev/Local/EdgeEngine -BC:/Dev/Local/EdgeEngine/build --check-stamp-file C:/Dev/Local/EdgeEngine/build/Source/Utils/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Dev/Local/EdgeEngine -BD:/Dev/Local/EdgeEngine/build --check-stamp-file D:/Dev/Local/EdgeEngine/build/Source/Utils/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -271,30 +271,34 @@ exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Dev\Local\EdgeEngine\build\Source\Utils\CMakeFiles\generate.stamp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Dev\Local\EdgeEngine\build\Source\Utils\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Log.h" />
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\utils.h" />
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Multithreading.h" />
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\SystemInfo.h" />
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Image.h" />
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Timer.h" />
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Log.cpp" />
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\utils.cpp" />
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Multithreading.cpp" />
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\SystemInfo.cpp" />
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Image.cpp" />
-    <ClCompile Include="C:\Dev\Local\EdgeEngine\Source\Utils\Source\Timer.cpp" />
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image.h" />
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image_resize.h" />
-    <ClInclude Include="C:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image_write.h" />
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Log.h" />
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\utils.h" />
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Multithreading.h" />
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\SystemInfo.h" />
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Image.h" />
+    <ClInclude Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Timer.h" />
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Log.cpp" />
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\utils.cpp" />
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Multithreading.cpp" />
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\SystemInfo.cpp" />
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Image.cpp" />
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Utils\Source\Timer.cpp" />
+    <Text Include="D:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image.h">
+    </Text>
+    <Text Include="D:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image_resize.h">
+    </Text>
+    <Text Include="D:\Dev\Local\EdgeEngine\Source\Utils\Libs\stb\stb_image_write.h">
+    </Text>
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <ProjectReference Include="C:\Dev\Local\EdgeEngine\build\ZERO_CHECK.vcxproj">
-      <Project>{8F8AF04C-A3CE-398B-994C-6DB3F67302E1}</Project>
+    <ProjectReference Include="D:\Dev\Local\EdgeEngine\build\ZERO_CHECK.vcxproj">
+      <Project>{F6305040-CA4F-3D9A-92CC-EF75505D76C5}</Project>
       <Name>ZERO_CHECK</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>

@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include "Math.h"
 // TODO: remove duplicate definition
 #define DEG2RAD (DirectX::XM_PI / 180.0f)
 #define RAD2DEG (180.0f / DirectX::XM_PI)
@@ -40,14 +41,14 @@ void Camera::SetProjectionMatrix(float fovy, float screenAspect, float screenNea
 {
 	XMStoreFloat4x4(&mMatProj, XMMatrixPerspectiveFovLH(fovy, screenAspect, screenNear, screenFar));
 }
-void Camera::Update(float dt)
+void Camera::Update(const float dt, const CameraInput& input)
 {
-	Rotate(dt);
-	Move(dt);
+	Rotate(dt, input);
+	Move(dt, input);
 	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	XMVECTOR lookAt = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 	const XMVECTOR pos = XMLoadFloat3(&mPosition);
-	const XMMATRIX MRot = RotMatrix();
+	const XMMATRIX MRot = GetRotationMatrix();
 	//transform the lookat and up vector by rotation matrix
 	lookAt	= XMVector3TransformCoord(lookAt, MRot);
 	up		= XMVector3TransformCoord(up,	  MRot);
@@ -84,7 +85,7 @@ FrustumPlaneset Camera::GetViewFrustumPlanes() const
 {
 	return FrustumPlaneset::ExtractFromMatrix(GetViewMatrix() * GetProjectionMatrix());
 }
-XMMATRIX Camera::RotMatrix() const
+XMMATRIX Camera::GetRotationMatrix() const
 {
 	return XMMatrixRotationRollPitchYaw(mPitch, mYaw, 0.0f);
 }
@@ -99,5 +100,19 @@ void Camera::Rotate(float yaw, float pitch, const float dt)
 }
 
 void Camera::Reset() {}
-void Camera::Rotate(const float dt) {}
-void Camera::Move(const float dt) {}
+void Camera::Rotate(const float dt, const CameraInput& input)
+{
+	float dy = input.DeltaMouseXY[1];
+	float dx = input.DeltaMouseXY[0];
+
+	const float delta = AngularSpeedDeg * DEG2RAD * dt;
+	Rotate(dx, dy, delta);
+}
+void Camera::Move(const float dt, const CameraInput& input)
+{
+	const XMMATRIX MRotation = GetRotationMatrix();
+	const XMVECTOR WorldSpaceTranslation = XMVector3TransformCoord(input.LocalTranslationVector, MRotation);
+	XMVECTOR V = XMLoadFloat3(&mVelocity);
+	V += (WorldSpaceTranslation * MoveSpeed - V * Drag) * dt;
+	XMStoreFloat3(&mVelocity, V);
+}
