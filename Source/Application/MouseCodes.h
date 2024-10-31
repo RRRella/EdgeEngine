@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <ostream>
+
 enum class MouseCode : uint16_t
 {
 	// From glfw3.h
@@ -18,6 +19,16 @@ enum class MouseCode : uint16_t
 	ButtonRight = Button1,
 	ButtonMiddle = Button2
 };
+
+inline uint16_t operator|(const MouseCode& a,const MouseCode& b)
+{
+	return static_cast<uint16_t>(static_cast<uint16_t>(a) | static_cast<uint16_t>(b));
+}
+
+inline uint16_t operator&(const MouseCode& a, const MouseCode& b)
+{
+	return static_cast<uint16_t>(static_cast<uint16_t>(a) & static_cast<uint16_t>(b));
+}
 
 inline std::ostream& operator<<(std::ostream& os, MouseCode mouseCode)
 {

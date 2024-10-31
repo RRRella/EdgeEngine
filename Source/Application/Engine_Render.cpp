@@ -56,7 +56,15 @@ void Engine::RenderThread_SignalUpdateThread()
 	mpSemUpdate->Signal();
 }
 
-
+static bool CheckInitialSwapchainResizeRequired(std::unordered_map<HWND, bool>& map, const FWindowSettings& setting, HWND hwnd)
+{
+	const bool bExclusiveFullscreen = setting.DisplayMode == EDisplayMode::EXCLUSIVE_FULLSCREEN;
+	if (bExclusiveFullscreen)
+	{
+		map[hwnd] = true;
+	}
+	return bExclusiveFullscreen;
+}
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 //
@@ -65,9 +73,13 @@ void Engine::RenderThread_SignalUpdateThread()
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 void Engine::RenderThread_Inititalize()
 {
+	const bool bExclusiveFullscreen_MainWnd = CheckInitialSwapchainResizeRequired(mInitialSwapchainResizeRequiredWindowLookup,
+																					mSettings.WndMain, 
+																					mpWinMain->GetHWND());
+
 	FRendererInitializeParameters params = {};
 	params.Settings = mSettings.gfx;
-	params.Windows.push_back(FWindowRepresentation(mpWinMain , mSettings.gfx.bVsync, mSettings.WndMain.DisplayMode == EDisplayMode::EXCLUSIVE_FULLSCREEN));
+	params.Windows.push_back(FWindowRepresentation(mpWinMain, mSettings.gfx.bVsync, bExclusiveFullscreen_MainWnd));
 
 	mRenderer.Initialize(params);
 	mbRenderThreadInitialized.store(true);
@@ -85,10 +97,22 @@ void Engine::RenderThread_Inititalize()
 
 	// Borderless fullscreen transitions are handled through Window object
 	// Exclusive  fullscreen transitions are handled through the Swapchain
-	if (mSettings.WndMain.DisplayMode == EDisplayMode::BORDERLESS_FULLSCREEN)
+	if (mpWinMain)
 	{
-		// TODO: preferred screen impl
-		if (mpWinMain) mpWinMain->ToggleWindowedFullscreen();
+		// Borderless fullscreen transitions are handled through Window object
+		// Exclusive  fullscreen transitions are handled through the Swapchain
+		if (mSettings.WndMain.DisplayMode == EDisplayMode::BORDERLESS_FULLSCREEN)
+		{
+			#if 0 // TODO: Initial borderless fullscreen window rect is bugged. Default to Primary Display.
+				mpWinMain->ToggleWindowedFullscreen(&mRenderer.GetWindowSwapChain(pWin->GetHWND()));
+			#else
+				mpWinMain->ToggleWindowedFullscreen();
+			#endif
+		}
+		if (mSettings.WndMain.DisplayMode == EDisplayMode::EXCLUSIVE_FULLSCREEN)
+		{
+			mpWinMain->SetMouseCapture(true);
+		}
 	}
 
 	RenderThread_LoadWindowSizeDependentResources(mpWinMain->GetHWND(), mpWinMain->GetWidth(), mpWinMain->GetHeight());
@@ -97,7 +121,6 @@ void Engine::RenderThread_Inititalize()
 void Engine::RenderThread_Exit()
 {
 	mRenderer.Unload();
-	RenderThread_UnloadWindowSizeDependentResources(mpWinMain->GetHWND());
 	mRenderer.Exit();
 }
 
@@ -436,11 +459,14 @@ HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 void Engine::RenderThread_HandleEvents()
 {
+	if (mbStopAllThreads)
+		return;
+
 	// Swap event recording buffers so we can read & process a limited number of events safely.
-	//   Otherwise, theoretically the producer (Main) thread could keep adding new events 
-	//   while we're spinning on the queue items below, and cause render thread to stall while, say, resizing.
+	// Otherwise, theoretically the producer (Main) thread could keep adding new events 
+	// while we're spinning on the queue items below, and cause render thread to stall while, say, resizing.
 	mWinEventQueue.SwapBuffers();
-	std::queue<std::unique_ptr<IEvent>>& q = mWinEventQueue.GetBackContainer();
+	std::queue<EventPtr_t>& q = mWinEventQueue.GetBackContainer();
 	if (q.empty())
 		return;
 
@@ -454,26 +480,20 @@ void Engine::RenderThread_HandleEvents()
 
 		switch (pEvent->mType)
 		{
-		case EEventType::WINDOW_RESIZE_EVENT: 
-			// noop, we only care about the last RESIZE event to avoid calling SwapchainResize() unneccessarily
-			pResizeEvent = std::static_pointer_cast<WindowResizeEvent>(pEvent);
-
-			break;
-		case EEventType::TOGGLE_FULLSCREEN_EVENT:
-			// handle every fullscreen event
-			RenderThread_HandleToggleFullscreenEvent(pEvent.get());
-			break;
+		case EEventType::WINDOW_RESIZE_EVENT: pResizeEvent = std::static_pointer_cast<WindowResizeEvent>(pEvent); break;
+		case EEventType::TOGGLE_FULLSCREEN_EVENT: RenderThread_HandleToggleFullscreenEvent(pEvent.get()); break;
+		case EEventType::WINDOW_CLOSE_EVENT: RenderThread_HandleWindowCloseEvent(pEvent.get()); break;
 		}
 	}
-	// Process Window Resize
-	if (pResizeEvent && pResizeEvent->width != 0 && pResizeEvent->height != 0)
+	
+	if (pResizeEvent) // Process only one Window Resize, if any.
 	{
-		RenderThread_HandleResizeWindowEvent(pResizeEvent.get());
+		RenderThread_HandleWindowResizeEvent(pResizeEvent.get());
 	}
 	
 }
 
-void Engine::RenderThread_HandleResizeWindowEvent(const IEvent* pEvent)
+void Engine::RenderThread_HandleWindowResizeEvent(const IEvent* pEvent)
 {
 	const WindowResizeEvent* pResizeEvent = static_cast<const WindowResizeEvent*>(pEvent);
 	const HWND&                      hwnd = pResizeEvent->hwnd;
@@ -481,6 +501,12 @@ void Engine::RenderThread_HandleResizeWindowEvent(const IEvent* pEvent)
 	const int                      HEIGHT = pResizeEvent->height;
 	SwapChain&                  Swapchain = mRenderer.GetWindowSwapChain(hwnd);
 	std::unique_ptr<Window>&         pWnd = GetWindow(hwnd);
+
+	if (pWnd->IsClosed())
+	{
+		Log::Warning("RenderThread: Ignoring WindowResizeEvent as Window<%x> is closed.", pWnd->GetHWND());
+		return;
+	}
 
 	Log::Info("RenderThread: Handle Resize event, set resolution to %dx%d", WIDTH , HEIGHT);
 
@@ -493,6 +519,23 @@ void Engine::RenderThread_HandleResizeWindowEvent(const IEvent* pEvent)
 	RenderThread_LoadWindowSizeDependentResources(hwnd, WIDTH, HEIGHT);
 }
 
+void Engine::RenderThread_HandleWindowCloseEvent(const IEvent* pEvent)
+{
+	const WindowCloseEvent* pWindowCloseEvent = static_cast<const WindowCloseEvent*>(pEvent);
+	const HWND& hwnd = pWindowCloseEvent->hwnd;
+	SwapChain& Swapchain = mRenderer.GetWindowSwapChain(hwnd);
+	std::unique_ptr<Window>& pWnd = GetWindow(hwnd);
+	Log::Info("RenderThread: Handle Window Close event <%x>", hwnd);
+	RenderThread_UnloadWindowSizeDependentResources(hwnd);
+	pWindowCloseEvent->mCondVar.notify_all();
+	if (hwnd == mpWinMain->GetHWND())
+	{
+		mbStopAllThreads.store(true);
+		RenderThread_SignalUpdateThread();
+	}
+}
+
+
 void Engine::RenderThread_HandleToggleFullscreenEvent(const IEvent* pEvent)
 {
 	const ToggleFullscreenEvent* pToggleFSEvent = static_cast<const ToggleFullscreenEvent*>(pEvent);
@@ -503,8 +546,9 @@ void Engine::RenderThread_HandleToggleFullscreenEvent(const IEvent* pEvent)
 	const bool            bFullscreenStateToSet = !Swapchain.IsFullscreen();
 	std::unique_ptr<Window>&               pWnd = GetWindow(hwnd);
 
-	Log::Info("RenderThread: Handle Fullscreen(exclusiveFS=%s) transition to %dx%d"
+	Log::Info("RenderThread: Handle Fullscreen(exclusiveFS=%s), %s %dx%d"
 		, (bFullscreenStateToSet ? "true" : "false")
+		, (bFullscreenStateToSet ? "RestoreSize: " : "Transition to: ")
 		, WndSettings.Width
 		, WndSettings.Height
 	);
@@ -528,7 +572,7 @@ void Engine::RenderThread_HandleToggleFullscreenEvent(const IEvent* pEvent)
 		// Swapchain handles resizing the window through SetFullscreenState() call
 		Swapchain.SetFullscreen(bFullscreenStateToSet, WndSettings.Width, WndSettings.Height);
 
-		// TODO: capture/release mouse
+		pWnd->SetMouseCapture(bFullscreenStateToSet);
 		
 		if (!bFullscreenStateToSet)
 		{
@@ -537,6 +581,17 @@ void Engine::RenderThread_HandleToggleFullscreenEvent(const IEvent* pEvent)
 			// will be visible, but not interactable and also not visible in taskbar.
 			// Explicitly calling Show() here fixes the situation.
 			pWnd->Show();
+
+			// Handle one-time transition: Swapchains starting in exclusive fullscreen will not trigger
+			// a Resize() event on the first Alt+Tab (Fullscreen -> Windowed). Doing it always in Swapchain.Resize()
+			// will result flickering from double resizing.
+			auto it = mInitialSwapchainResizeRequiredWindowLookup.find(hwnd);
+			const bool bWndNeedsResize = it != mInitialSwapchainResizeRequiredWindowLookup.end() && it->second;
+			if (bWndNeedsResize)
+			{
+				mInitialSwapchainResizeRequiredWindowLookup.erase(it);
+				Swapchain.Resize(WndSettings.Width, WndSettings.Height);
+			}
 		}
 	}
 

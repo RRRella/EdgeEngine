@@ -14,13 +14,13 @@
 
 void ParseCommandLineParameters(FStartupParameters& refStartupParams, PSTR pScmdl)
 {
-	const std::string StrCmdLineParams = pScmdl;
+	const std::string StrCmdLineParams = "-LogConsole -LogFile=./Logg.txt";
 	const std::vector<std::string> params = StrUtil::split(StrCmdLineParams, ' ');
 	for (const std::string& param : params)
 	{
 		const std::vector<std::string> paramNameValue = StrUtil::split(param, '=');
 		const std::string& paramName = paramNameValue.front();
-		std::string  paramValue = paramNameValue.size() > 1 ? paramNameValue[1] : "";
+		std::string paramValue = paramNameValue.size() > 1 ? paramNameValue[1] : "";
 
 		//
 		// Log Settings
@@ -38,28 +38,6 @@ void ParseCommandLineParameters(FStartupParameters& refStartupParams, PSTR pScmd
 		//
 		// Engine Settings
 		//
-		if (paramName == "-Test")
-		{
-			refStartupParams.bOverrideENGSetting_bAutomatedTest = true;
-			refStartupParams.EngineSettings.bAutomatedTestRun = true;
-		}
-		if (paramName == "-TestFrames")
-		{
-			refStartupParams.bOverrideENGSetting_bAutomatedTest = true;
-			refStartupParams.EngineSettings.bAutomatedTestRun = true;
-
-			refStartupParams.bOverrideENGSetting_bTestFrames  = true;
-			if (paramValue.empty())
-			{
-				constexpr int NUM_DEFAULT_TEST_FRAMES = 100;
-				Log::Warning("Empty -TestFrames value specified, using default: %d", NUM_DEFAULT_TEST_FRAMES);
-				refStartupParams.EngineSettings.NumAutomatedTestFrames = NUM_DEFAULT_TEST_FRAMES;
-			}
-			else
-			{
-				refStartupParams.EngineSettings.NumAutomatedTestFrames = std::atoi(paramValue.c_str());
-			}
-		}
 		if (paramName == "-Width" || paramName == "-W")
 		{
 			refStartupParams.bOverrideENGSetting_MainWindowWidth = true;
@@ -71,11 +49,6 @@ void ParseCommandLineParameters(FStartupParameters& refStartupParams, PSTR pScmd
 			refStartupParams.bOverrideENGSetting_MainWindowHeight = true;
 			refStartupParams.EngineSettings.WndMain.Height = std::atoi(paramValue.c_str());
 		}
-		if (paramName == "-DebugWindow" || paramName == "-dwnd")
-		{
-			//refStartupParams.
-		}
-
 		//
 		// Graphics Settings
 		//
@@ -101,7 +74,6 @@ void ParseCommandLineParameters(FStartupParameters& refStartupParams, PSTR pScmd
 		}
 	}
 }
-
 
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR pScmdl, int iCmdShow)
 {

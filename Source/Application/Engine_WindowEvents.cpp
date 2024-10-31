@@ -1,9 +1,11 @@
 #include "Engine.h"
 #include "Input.h"
+#include <Windowsx.h>
 
 constexpr int MIN_WINDOW_SIZE = 128;
 
 #define LOG_WINDOW_MESSAGE_EVENTS 0
+#define LOG_RAW_INPUT			  0
 static void LogWndMsg(UINT uMsg, HWND hwnd);
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -19,32 +21,23 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	switch (uMsg)
 	{
-	case WM_CREATE:
-		if (pWindow->pOwner) pWindow->pOwner->OnWindowCreate(pWindow);
-		return 0;
 
-	case WM_SIZE:
+	case WM_CREATE: if (pWindow->pOwner) pWindow->pOwner->OnWindowCreate(pWindow); return 0;
+	case WM_SIZE:   if (pWindow->pOwner) pWindow->pOwner->OnWindowResize(hwnd); return 0;
+	case WM_PAINT:
 	{
-		if (pWindow->pOwner) pWindow->pOwner->OnWindowResize(hwnd);
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hwnd, &ps);
+		FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
+		EndPaint(hwnd, &ps);
 		return 0;
 	}
-	case WM_KEYDOWN:
-		if (pWindow->pOwner) pWindow->pOwner->OnWindowKeyDown(hwnd, wParam);
-		return 0;
-	case WM_KEYUP:
-		if (pWindow->pOwner) pWindow->pOwner->OnWindowKeyUp(hwnd, wParam);
-		return 0;
-		// mouse buttons
-	case WM_MBUTTONDOWN:
-	case WM_LBUTTONDOWN:
-	case WM_RBUTTONDOWN:
-		//if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonDown();
-		return 0;
-	case WM_MBUTTONUP:
-	case WM_RBUTTONUP:
-	case WM_LBUTTONUP:
-		//if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonUp();
-		return 0;
+	case WM_SETFOCUS: if (pWindow->pOwner) pWindow->pOwner->OnWindowFocus(pWindow); return 0;
+	case WM_CLOSE:    if (pWindow->pOwner) pWindow->pOwner->OnWindowClose(hwnd); return 0;
+	case WM_DESTROY:  return 0;
+
+	case WM_KEYDOWN: if (pWindow->pOwner) pWindow->pOwner->OnKeyDown(hwnd, wParam); return 0;
+	case WM_KEYUP:   if (pWindow->pOwner) pWindow->pOwner->OnKeyUp(hwnd, wParam);   return 0;
 
 	case WM_SYSKEYDOWN:
 		if ((wParam == VK_RETURN) && (lParam & (1 << 29))) // Handle ALT+ENTER
@@ -55,40 +48,82 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				return 0;
 			}
 		}
-		// Send all other WM_SYSKEYDOWN messages to the default WndProc.
-		break;
-	case WM_PAINT:
+		break; // Send all other WM_SYSKEYDOWN messages to the default WndProc.
+		//
+		// MOUSE
+		//
+	case WM_MBUTTONDOWN: // wParam encodes which mouse key is pressed, unlike *BUTTONUP events
+	case WM_LBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+		if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonDown(hwnd, wParam, false);
+		return 0;
+	case WM_LBUTTONDBLCLK:
+	case WM_RBUTTONDBLCLK:
+	case WM_MBUTTONDBLCLK:
+		if (pWindow->pOwner)
+		{
+			pWindow->pOwner->OnMouseButtonDown(hwnd, wParam, true);
+			pWindow->pOwner->OnMouseButtonDown(hwnd, wParam, true);
+		}
+
+	case WM_MBUTTONUP: if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonUp(hwnd, MK_MBUTTON); return 0;
+	case WM_RBUTTONUP: if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonUp(hwnd, MK_RBUTTON); return 0;
+	case WM_LBUTTONUP: if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonUp(hwnd, MK_LBUTTON); return 0;
+#if ENABLE_RAW_INPUT
+	case WM_INPUT: if (pWindow->pOwner) pWindow->pOwner->OnMouseInput(hwnd, lParam);
+#else
+
+	case WM_MOUSEMOVE: if (pWindow->pOwner) pWindow->pOwner->OnMouseMove(hwnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)); return 0;
+	case WM_MOUSEWHEEL:
 	{
-		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hwnd, &ps);
-		FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
-		EndPaint(hwnd, &ps);
-		return 0;
+		const WORD fwKeys = GET_KEYSTATE_WPARAM(wParam);
+		const short zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+		if (pWindow->pOwner) pWindow->pOwner->OnMouseScroll(hwnd, zDelta); return 0;
 	}
-
-	case WM_SETFOCUS:
-	{
-		if (pWindow->pOwner) pWindow->pOwner->OnWindowFocus(pWindow);
-		return 0;
-	}
-
-	case WM_CLOSE:
-		if (pWindow->pOwner) pWindow->pOwner->OnWindowClose(pWindow);
-		return 0;
-
-	case WM_DESTROY:
-		return 0;
-
-	}
+#endif // ENABLE_RAW_INPUT
 
 
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
+
+	}
 }
 
-
-
-void Engine::OnWindowCreate(IWindow* pWnd)
+void Engine::OnWindowCreate(IWindow * pWnd)
 {
+}
+
+void Engine::OnWindowClose(HWND hwnd_)
+{
+	std::shared_ptr<WindowCloseEvent> ptr = std::make_shared<WindowCloseEvent>(hwnd_);
+	mWinEventQueue.AddItem(ptr);
+
+	std::unique_lock lck(ptr->mMtx);
+
+	ptr->mCondVar.wait(lck);
+	if (hwnd_ == mpWinMain->GetHWND())
+	{
+		PostQuitMessage(0); // must be called from the main thread.
+	}
+	GetWindow(hwnd_)->Close(); // must be called from the main thread.
+}
+
+void Engine::OnMouseButtonDown(HWND hwnd, WPARAM wParam, bool bIsDoubleClick)
+{
+	mInputEventQueue.AddItem(std::make_unique<KeyDownEvent>(hwnd, wParam, bIsDoubleClick));
+}
+
+void Engine::OnMouseButtonUp(HWND hwnd, WPARAM wParam)
+{
+	mInputEventQueue.AddItem(std::make_unique<KeyUpEvent>(hwnd, wParam));
+}
+void Engine::OnMouseScroll(HWND hwnd, short scroll)
+{
+	mInputEventQueue.AddItem(std::make_unique<MouseScrollEvent>(hwnd, scroll));
+}
+void Engine::OnMouseMove(HWND hwnd, long x, long y)
+{
+	//Log::Info("MouseMove : (%ld, %ld)", x, y);
+	mInputEventQueue.AddItem(std::make_unique<MouseMoveEvent>(hwnd, x, y));
 }
 
 void Engine::OnWindowResize(HWND hWnd)
@@ -119,32 +154,23 @@ void Engine::OnWindowFocus(IWindow* pWindow)
 	//Log::Info("On Focus!");
 }
 
+void Engine::OnMouseInput(HWND hwnd, LPARAM lParam)
+{
+}
 
-void Engine::OnWindowKeyDown(HWND hwnd, WPARAM wParam)
+
+void Engine::OnKeyDown(HWND hwnd, WPARAM wParam)
 {
 	// Due to multi-threading, this thread will record the events and 
 	// Update Thread will process the queue at the beginning of an update loop
 	mInputEventQueue.AddItem(std::make_unique<KeyDownEvent>(hwnd, wParam));
 }
-void Engine::OnWindowKeyUp(HWND hwnd, WPARAM wParam)
+void Engine::OnKeyUp(HWND hwnd, WPARAM wParam)
 {
 	// Due to multi-threading, this thread will record the events and 
 	// Update Thread will process the queue at the beginning of an update loop
 	mInputEventQueue.AddItem(std::make_unique<KeyUpEvent>(hwnd, wParam));
 }
-
-void Engine::OnWindowClose(IWindow* pWindow)
-{
-	mRenderer.GetWindowSwapChain(static_cast<Window*>(pWindow)->GetHWND()).WaitForGPU();
-
-	pWindow->Close();
-
-	if (pWindow == mpWinMain.get())
-		PostQuitMessage(0);
-
-}
- 
-
 
 // ----------------------------------------------------------------------------------------------------
 static void LogWndMsg(UINT uMsg, HWND hwnd)

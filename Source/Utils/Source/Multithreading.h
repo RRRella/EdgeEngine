@@ -1,5 +1,4 @@
 #pragma once
-
 #include <mutex>
 #include <condition_variable>
 #include <queue>
@@ -7,19 +6,16 @@
 #include <atomic>
 
 // utility function for checking if a std::future<> is ready without blocking
-template<typename R> bool is_ready(std::future<R> const& f) { return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready; }
+template<typename R> bool is_ready(std::future<R> const& f) 
+{ 
+	return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready; 
+}
 
-
-//
-// Synchronization Object similar to std::mutex except it allows multiple threads instead of just one
-//
 class Semaphore
 {
 public:
 	Semaphore(int val, int max) : maxVal(max), currVal(val) {}
 
-	inline void P() { Wait(); }
-	inline void V() { Signal(); }
 	void Wait();
 	void Signal();
 
@@ -29,21 +25,14 @@ private:
 	std::condition_variable cv;
 };
 
-
 // --------------------------------------------------------------------------------------------------------------------------------------
 //
 // Thread Pool
 //
 //---------------------------------------------------------------------------------------------------------------------------------------
-//
-// Task Queue for thread pools
-//
 using Task = std::function<void()>;
 class TaskQueue
 {
-
-// http://www.cplusplus.com/reference/thread/thread/
-// https://stackoverflow.com/a/32593825/2034041
 public:
 	template<class T>
 	void AddTask(std::shared_ptr<T>& pTask);
@@ -57,9 +46,10 @@ public:
 
 private:
 	std::atomic<int> activeTasks = 0;
-	mutable std::mutex mutex; // https://stackoverflow.com/a/25521702/2034041
+	mutable std::mutex mutex;
 	std::queue<Task> queue;
 };
+
 template<class T>
 inline void TaskQueue::AddTask(std::shared_ptr<T>& pTask)
 {
@@ -68,18 +58,12 @@ inline void TaskQueue::AddTask(std::shared_ptr<T>& pTask)
 	++activeTasks;
 }
 
-
-
-//
-// A Collection of threads picking up tasks from its queue and executes on threads
-// src: https://www.youtube.com/watch?v=eWTGtp3HXiw
-//
 class ThreadPool
 {
 public:
 	inline static const size_t sHardwareThreadCount = std::thread::hardware_concurrency();
 
-	void Initialize(size_t numWorkers, const std::string& ThreadPoolName, unsigned int MarkerColor = 0xFFAAAAAA);
+	void Initialize(size_t numWorkers, const std::string& ThreadPoolName);
 	void Destroy();
 
 	inline int GetNumActiveTasks() const { return IsExiting() ? 0 : mTaskQueue.GetNumActiveTasks(); };
@@ -106,28 +90,18 @@ private:
 	TaskQueue                mTaskQueue;
 	std::vector<std::thread> mWorkers;
 	std::string              mThreadPoolName;
-
-public:
-	unsigned int             mMarkerColor;
 };
 
 template<class T>
 decltype(auto) ThreadPool::AddTask(T&& task)
 {
-	// use a shared_ptr<> of packaged tasks here as we execute them in the thread pool workers as well
-	// as accesing its get_future() on the thread that calls this AddTask() function.
-	auto pTask = std::make_shared< std::packaged_task<decltype(task())()>>(std::forward<T>(task));
+	auto pTask = std::make_shared<std::packaged_task<decltype(task())()>>(std::forward<T>(task));
 	mTaskQueue.AddTask(pTask);
-	//Log::Info("[%s] TaskQueue::AddTask()", this->mThreadPoolName.c_str());
 
 	mCondVar.notify_one();
-	//Log::Info("[%s] Signal::NotifyOne()", this->mThreadPoolName.c_str());
+	
 	return pTask->get_future();
 }
-
-std::vector<std::pair<size_t, size_t>> PartitionWorkItemsIntoRanges(size_t NumWorkItems, size_t NumWorkerThreadCount);
-size_t CalculateNumThreadsToUse(const size_t NumWorkItems, const size_t NumWorkerThreads, const size_t NumMinimumWorkItemCountPerThread);
-
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 //
@@ -150,7 +124,7 @@ class BufferedContainer
 {
 public:
 	TContainer& GetBackContainer() { return mBufferPool[(iBuffer + 1) % 2]; }
-	const TContainer& GetBackContainer() const { return mBufferPool[(iBuffer+1)%2]; }
+	const TContainer& GetBackContainer() const { return mBufferPool[(iBuffer + 1) % 2]; }
 	
 	void AddItem(TItem&& item)
 	{
@@ -160,7 +134,7 @@ public:
 	void SwapBuffers() 
 	{
 		std::unique_lock<std::mutex> lk(mMtx);
-		iBuffer ^= 1; 
+		iBuffer ^= 1;
 	}
 	bool IsEmpty() const
 	{
@@ -178,9 +152,6 @@ private:
 // ConcurrentQueue
 //
 //---------------------------------------------------------------------------------------------------------------------------------------
-//
-// Wrapper for std::queue<> with a std::mutex to enable concurrency
-//
 template<class T>
 class ConcurrentQueue
 {

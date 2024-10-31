@@ -5,12 +5,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
+
 #include "../Libs/stb/stb_image.h"
 #include "../Libs/stb/stb_image_write.h"
 #include "../Libs/stb/stb_image_resize.h"
-
-#include "../Libs/miniz/miniz.h"
-#include "../Libs/tinyexr/tinyexr.h"
 
 #include <vector>
 #include <set>
@@ -23,39 +21,20 @@ static bool IsHDRFileExtension(const std::string& ext) { return S_HDR_FORMATS.fi
 static float CalculateMaxLuminance(const float* pData, int width, int height, int numComponents)
 {
     float MaxLuminance = 0.0f;
-    float MaxLuminance2 = 0.0f;
-    float MaxLuminance3 = 0.0f;
-    float MaxLightLevel = 0.0f;
-    float LuminanceSum = 0.0f;
     
-    for(int h=0; h< height; ++h) // row
-    for(int w = 0; w < width; ++w) // col
+    for (int h = 0; h < height; ++h)
     {
-        const int pxIndex = (w  + width * h) * numComponents;
-        const float& r = pData[pxIndex + 0];
-        const float& g = pData[pxIndex + 1];
-        const float& b = pData[pxIndex + 2];
+        for (int w = 0; w < width; ++w)
+        {
+            const int pxIndex = (width * h + w) * numComponents;
+            const float& r = pData[pxIndex];
+            const float& g = pData[pxIndex + 1];
+            const float& b = pData[pxIndex + 2];
 
-        const float lum = 0.2126f * r + 0.7152f * g + 0.0722f * b;
-        if (lum > MaxLuminance) 
-            MaxLuminance = lum;
-
-        const float lum2 = 0.299f * r + 0.587f * g + 0.114f * b;
-        if (lum2 > MaxLuminance2)
-            MaxLuminance2 = lum2;
-
-        const float lum3 = std::sqrtf(0.299f * r * r + 0.587f * g * g + 0.114f * b * b);
-        if (lum3 > MaxLuminance3)
-            MaxLuminance3 = lum3;
-
-        if (MaxLightLevel <= r)
-            MaxLightLevel = r;
-        if (MaxLightLevel <= g)
-            MaxLightLevel = g;
-        if (MaxLightLevel <= b)
-            MaxLightLevel = b;
-
-        LuminanceSum += lum;
+            const float lum = 0.2126f * r + 0.7152f * g + 0.0722f * b;
+            if (lum > MaxLuminance)
+                MaxLuminance = lum;
+        }
     }
 
     return MaxLuminance;
@@ -73,8 +52,8 @@ Image Image::LoadFromFile(const char* pFilePath)
 
     int NumImageComponents = 0;
     img.pData = bHDR
-        ? (void*)stbi_loadf(pFilePath, &img.x, &img.y, &NumImageComponents, 4)
-        : (void*)stbi_load(pFilePath, &img.x, &img.y, &NumImageComponents, 4);
+        ? (void*)stbi_loadf(pFilePath, &img.Width, &img.Height, &NumImageComponents, 4)
+        : (void*)stbi_load(pFilePath, &img.Width, &img.Height, &NumImageComponents, 4);
 
     if (img.pData == nullptr)
     {
@@ -124,7 +103,7 @@ Image Image::CreateResizedImage(const Image& img, unsigned TargetWidth, unsigned
     else
     {
         rc = -1;
-        assert(false); // TODO: impl
+        assert(false);
     }
 
     if (rc <= 0)
@@ -160,13 +139,13 @@ bool Image::SaveToDisk(const char* pStrPath) const
     if (bHDR)
     {
         const int comp = 4; // HDR is 4 bytes / component (RGBA32F)
-        rc = stbi_write_hdr(pStrPath, this->x, this->y, comp, reinterpret_cast<const float*>(this->pData));
+        rc = stbi_write_hdr(pStrPath, this->Width, this->Height, comp, reinterpret_cast<const float*>(this->pData));
     }
     else
     {
-        assert(false); // TODO: test
+        assert(false);
         const int comp = this->BytesPerPixel;
-        rc = stbi_write_png(pStrPath, this->x, this->y, comp, this->pData, 0); 
+        rc = stbi_write_png(pStrPath, this->Width, this->Height, comp, this->pData, 0); 
     }
 
     return rc != 0; // 0 is err?

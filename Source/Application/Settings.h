@@ -33,9 +33,4 @@ struct FEngineSettings
 	FGraphicsSettings gfx;
 
 	FWindowSettings WndMain;
-
-	bool bShowDebugWindow = false;
-
-	bool bAutomatedTestRun     = false;
-	int NumAutomatedTestFrames = -1;
 };

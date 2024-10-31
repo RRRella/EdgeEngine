@@ -25,17 +25,14 @@ struct FStartupParameters
 
 	FEngineSettings EngineSettings;
 
-	uint8 bOverrideGFXSetting_RenderScale         : 1;
-	uint8 bOverrideGFXSetting_bVSync              : 1;
-	uint8 bOverrideGFXSetting_bUseTripleBuffering : 1;
+	uint8 bOverrideGFXSetting_RenderScale;
+	uint8 bOverrideGFXSetting_bVSync;
+	uint8 bOverrideGFXSetting_bUseTripleBuffering;
 
-	uint8 bOverrideENGSetting_MainWindowHeight    : 1;
-	uint8 bOverrideENGSetting_MainWindowWidth     : 1;
-	uint8 bOverrideENGSetting_bFullscreen         : 1;
-	uint8 bOverrideENGSetting_PreferredDisplay    : 1;
-
-	uint8 bOverrideENGSetting_bAutomatedTest      : 1;
-	uint8 bOverrideENGSetting_bTestFrames         : 1;
+	uint8 bOverrideENGSetting_MainWindowHeight;
+	uint8 bOverrideENGSetting_MainWindowWidth;
+	uint8 bOverrideENGSetting_bFullscreen;
+	uint8 bOverrideENGSetting_PreferredDisplay;
 };
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

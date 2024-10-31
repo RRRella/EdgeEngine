@@ -83,14 +83,20 @@ public:
 
 	// Window event callbacks for the main Window
 	void OnWindowCreate(IWindow* pWnd) override;
-	void OnWindowResize(HWND hWnd) override;
-	void OnToggleFullscreen(HWND hWnd) override;
+	void OnWindowResize(HWND) override;
+	void OnToggleFullscreen(HWND) override;
 	void OnWindowMinimize(IWindow* pWnd) override;
-	void OnWindowFocus(IWindow* pWindow) override;
-	void OnWindowClose(IWindow* pWindow) override;
-	void OnWindowKeyDown(HWND hwnd, WPARAM wParam) override;
-	void OnWindowKeyUp(HWND hwnd, WPARAM wParam) override;
-	
+	void OnWindowFocus(IWindow* pWnd) override;
+	void OnWindowClose(HWND hwnd_) override;
+
+	void OnKeyDown(HWND, WPARAM) override;
+	void OnKeyUp(HWND, WPARAM) override;
+
+	void OnMouseButtonDown(HWND hwnd, WPARAM wParam, bool bIsDoubleClick) override;
+	void OnMouseButtonUp(HWND, WPARAM) override;
+	void OnMouseScroll(HWND hwnd, short scrollDirection) override;
+	void OnMouseMove(HWND hwnd, long x, long y) override;
+	void OnMouseInput(HWND hwnd, LPARAM lParam) override;
 
 	void MainThread_Tick();
 
@@ -148,7 +154,8 @@ public:
 private:
 	using BuiltinMeshArray_t     = std::array<Mesh      , EBuiltInMeshes::NUM_BUILTIN_MESHES>;
 	using BuiltinMeshNameArray_t = std::array<std::string, EBuiltInMeshes::NUM_BUILTIN_MESHES>;
-	using EventQueue_t = BufferedContainer<std::queue<std::unique_ptr<IEvent>>, std::unique_ptr<IEvent>>;
+	using EventPtr_t   = std::shared_ptr<IEvent>;
+	using EventQueue_t = BufferedContainer<std::queue<EventPtr_t>, EventPtr_t>;
 	using UpdateContextLookup_t = std::unordered_map<HWND, IWindowUpdateContext*>;
 
 	// threads
@@ -179,7 +186,12 @@ private:
 	FEngineSettings            mSettings;
 	EAppState                  mAppState;
 	SystemInfo::FSystemInfo    mSysInfo;
-	Timer mTimer;
+	Timer					   mTimer;
+
+	// misc.
+	// One Swapchain.Resize() call is required for the first time 
+	// transition of swapchains which are initialzied fullscreen.
+	std::unordered_map<HWND, bool>  mInitialSwapchainResizeRequiredWindowLookup;
 
 	// scene
 	MainWindowScene					mScene_MainWnd;
@@ -187,7 +199,7 @@ private:
 	RenderingResources_MainWindow   mResources_MainWnd;
 
 	//input
-	Input                          mInput;
+	std::unordered_map<HWND, Input> mInputStates;
 
 	// events
 	EventQueue_t	mWinEventQueue;
@@ -211,10 +223,14 @@ private:
 	HRESULT                  RenderThread_RenderMainWindow_LoadingScreen(FWindowRenderContext& ctx);
 	HRESULT                  RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx);
 	
-	void                     RenderThread_HandleResizeWindowEvent(const IEvent* pEvent);
+	void                     RenderThread_HandleWindowResizeEvent(const IEvent* pEvent);
+	void                     RenderThread_HandleWindowCloseEvent(const IEvent* pEvent);
 	void                     RenderThread_HandleToggleFullscreenEvent(const IEvent* pEvent);
 	
 	std::unique_ptr<Window>& GetWindow(HWND hwnd);
 	const FWindowSettings&   GetWindowSettings(HWND hwnd) const;
 	FWindowSettings&         GetWindowSettings(HWND hwnd);
+
+	void                     RegisterWindowForInput(const std::unique_ptr<Window>& pWnd);
+	void                     UnregisterWindowForInput(const std::unique_ptr<Window>& pWnd);
 };

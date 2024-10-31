@@ -77,4 +77,7 @@ private:
 	IDXGISwapChain4*             mpSwapChain      = nullptr;
 	ID3D12CommandQueue*          mpPresentQueue   = nullptr;
 	DXGI_FORMAT                  mSwapChainFormat = DXGI_FORMAT_UNKNOWN;
+
+	bool						 mbVsync		  = false;
+	bool						 mbFullscreen	  = false;
 };

@@ -22,13 +22,11 @@ void Semaphore::Signal()
 
 static void SetThreadName(std::thread& th, const wchar_t* threadName) {
 	HRESULT hr = SetThreadDescription(th.native_handle(), threadName);
-	if (FAILED(hr)) {
-		// Handle error if needed
-	}
+	if (FAILED(hr)) {}
 }
-void ThreadPool::Initialize(size_t numThreads, const std::string& ThreadPoolName, unsigned int MarkerColor)
+
+void ThreadPool::Initialize(size_t numThreads, const std::string& ThreadPoolName)
 {
-	mMarkerColor = MarkerColor;
 	mThreadPoolName = ThreadPoolName;
 	mbStopWorkers.store(false);
 	for (auto i = 0u; i < numThreads; ++i)
@@ -37,6 +35,7 @@ void ThreadPool::Initialize(size_t numThreads, const std::string& ThreadPoolName
 		SetThreadName(mWorkers.back(), StrUtil::ASCIIToUnicode(ThreadPoolName).c_str());
 	}
 }
+
 void ThreadPool::Destroy()
 {
 	mbStopWorkers.store(true);
@@ -52,7 +51,7 @@ void ThreadPool::Destroy()
 void ThreadPool::RunRemainingTasksOnThisThread()
 {
 	Task task; 
-	while (mTaskQueue.IsQueueEmpty())
+	while (!mTaskQueue.IsQueueEmpty())
 	{
 		mTaskQueue.PopTask(task);
 		task(); 
@@ -89,44 +88,3 @@ void TaskQueue::PopTask(Task& task)
 	task = std::move(queue.front());
 	queue.pop();
 }
-
-std::vector<std::pair<size_t, size_t>> PartitionWorkItemsIntoRanges(size_t NumWorkItems, size_t NumWorkerThreadCount)
-{
-	// @NumWorkItems is distributed as equally as possible between all @NumWorkerThreadCount threads.
-	// Two numbers are determined
-	// - NumWorkItemPerThread: number of work items each thread will get equally
-	// - NumWorkItemPerThread_Extra : number of +1's to be added to each worker
-	const size_t NumWorkItemPerThread = NumWorkItems / NumWorkerThreadCount; // amount of work each worker is to get, 
-	const size_t NumWorkItemPerThread_Extra = NumWorkItems % NumWorkerThreadCount;
-
-	std::vector<std::pair<size_t, size_t>> vRanges(NumWorkItemPerThread == 0
-		? NumWorkItems  // if NumWorkItems < NumWorkerThreadCount, then only create ranges according to NumWorkItems
-		: NumWorkerThreadCount // each worker thread gets a range
-	);
-
-	size_t iRange = 0;
-	for (auto& range : vRanges)
-	{
-		range.first = iRange != 0 ? vRanges[iRange - 1].second + 1 : 0;
-		range.second = range.first + NumWorkItemPerThread - 1 + (NumWorkItemPerThread_Extra > iRange ? 1 : 0);
-		assert(range.first <= range.second); // ensure work context bounds
-		++iRange;
-	}
-
-	return vRanges;
-}
-
-size_t CalculateNumThreadsToUse(const size_t NumWorkItems, const size_t NumWorkerThreads, const size_t NumMinimumWorkItemCountPerThread)
-{
-#define DIV_AND_ROUND_UP(x, y) ((x+y-1)/(y))
-	const size_t NumWorkItemsPerAvailableWorkerThread = DIV_AND_ROUND_UP(NumWorkItems, NumWorkerThreads);
-	size_t NumWorkerThreadsToUse = NumWorkerThreads;
-	if (NumWorkItemsPerAvailableWorkerThread < NumMinimumWorkItemCountPerThread)
-	{
-		const float OffRatio = float(NumMinimumWorkItemCountPerThread) / float(NumWorkItemsPerAvailableWorkerThread);
-		NumWorkerThreadsToUse = static_cast<size_t>(NumWorkerThreadsToUse / OffRatio); // clamp down
-		NumWorkerThreadsToUse = std::max((size_t)1, NumWorkerThreadsToUse);
-	}
-	return NumWorkerThreadsToUse;
-}
-

@@ -16,14 +16,6 @@ constexpr char* ENGINE_VERSION = "v0.1.0";
 
 void Engine::MainThread_Tick()
 {
-	if (this->mSettings.bAutomatedTestRun)
-	{
-		if (this->mSettings.NumAutomatedTestFrames <= mNumRenderLoopsExecuted)
-		{
-			PostQuitMessage(0);
-		}
-	}
-
 	// TODO: populate input queue and signal Update thread 
 	//       to drain the buffered input from the queue
 }
@@ -47,14 +39,11 @@ bool Engine::Initialize(const FStartupParameters& Params)
 	return true;
 }
 
+
 void Engine::Exit()
 {
 	ExitThreads();
-
-	
 }
-
-
 
 void Engine::InititalizeEngineSettings(const FStartupParameters& Params)
 {
@@ -72,10 +61,6 @@ void Engine::InititalizeEngineSettings(const FStartupParameters& Params)
 	s.WndMain.PreferredDisplay = 0;
 	sprintf_s(s.WndMain.Title , "Engine %s-%s", ENGINE_VERSION, BUILD_CONFIG);
 
-	s.bAutomatedTestRun = false;
-	s.NumAutomatedTestFrames = 100; // default num frames to run if -Test is specified in cmd line params
-
-
 	// Override #0 : from file
 	FStartupParameters paramFile = Engine::ParseEngineSettingsFile();
 	const FEngineSettings& pf = paramFile.EngineSettings;
@@ -88,14 +73,6 @@ void Engine::InititalizeEngineSettings(const FStartupParameters& Params)
 	if (paramFile.bOverrideENGSetting_bFullscreen)                 s.WndMain.DisplayMode      = pf.WndMain.DisplayMode;
 	if (paramFile.bOverrideENGSetting_PreferredDisplay)            s.WndMain.PreferredDisplay = pf.WndMain.PreferredDisplay;
 
-	if (paramFile.bOverrideENGSetting_bAutomatedTest)              s.bAutomatedTestRun = pf.bAutomatedTestRun;
-	if (paramFile.bOverrideENGSetting_bTestFrames)
-	{ 
-		s.bAutomatedTestRun = true; 
-		s.NumAutomatedTestFrames = pf.NumAutomatedTestFrames; 
-	}
-
-
 	// Override #1 : if there's command line params
 	if (Params.bOverrideGFXSetting_bVSync     )                 s.gfx.bVsync              = p.gfx.bVsync;
 	if (Params.bOverrideGFXSetting_bUseTripleBuffering)         s.gfx.bUseTripleBuffering = p.gfx.bUseTripleBuffering;
@@ -105,13 +82,6 @@ void Engine::InititalizeEngineSettings(const FStartupParameters& Params)
 	if (Params.bOverrideENGSetting_MainWindowHeight)            s.WndMain.Height           = p.WndMain.Height;
 	if (Params.bOverrideENGSetting_bFullscreen)                 s.WndMain.DisplayMode      = p.WndMain.DisplayMode;
 	if (Params.bOverrideENGSetting_PreferredDisplay)            s.WndMain.PreferredDisplay = p.WndMain.PreferredDisplay;
-
-	if (Params.bOverrideENGSetting_bAutomatedTest)     s.bAutomatedTestRun    = p.bAutomatedTestRun;
-	if (Params.bOverrideENGSetting_bTestFrames)
-	{
-		s.bAutomatedTestRun = true;
-		s.NumAutomatedTestFrames = Params.EngineSettings.NumAutomatedTestFrames;
-	}
 }
 
 void Engine::InitializeApplicationWindows(const FStartupParameters& Params)
@@ -193,6 +163,28 @@ FWindowSettings& Engine::GetWindowSettings(HWND hwnd)
 
 	Log::Warning("Engine::GetWindowSettings() : Invalid hwnd=0x%x, returning Main Window Settings", hwnd);
 	return mSettings.WndMain;
+}
+
+void Engine::RegisterWindowForInput(const std::unique_ptr<Window>& pWnd)
+{
+	if (pWnd)
+	{
+		mInputStates[pWnd->GetHWND()] = Input();
+	}
+}
+void Engine::UnregisterWindowForInput(const std::unique_ptr<Window>& pWnd)
+{
+	if (pWnd)
+	{
+		HWND hwnd = pWnd->GetHWND();
+		auto it = mInputStates.find(hwnd);
+		if (it == mInputStates.end())
+		{
+			Log::Error("UnregisterWindowForInput() called with an unregistered Window<%x>", hwnd);
+			return;
+		}
+		mInputStates.erase(it);
+	}
 }
 
 

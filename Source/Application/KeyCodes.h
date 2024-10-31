@@ -136,9 +136,19 @@ enum class KeyCode : uint16_t
 	Menu = 348
 };
 
-inline std::ostream& operator<<(std::ostream& os, KeyCode keyCode)
+inline uint16_t operator|(const KeyCode& a, const KeyCode& b)
 {
-	os << static_cast<int32_t>(keyCode);
+	return static_cast<uint16_t>(static_cast<uint16_t>(a) | static_cast<uint16_t>(b));
+}
+
+inline uint16_t operator&(const KeyCode& a, const KeyCode& b)
+{
+	return static_cast<uint16_t>(static_cast<uint16_t>(a) & static_cast<uint16_t>(b));
+}
+
+inline std::ostream& operator<<(std::ostream& os, KeyCode mouseCode)
+{
+	os << static_cast<uint16_t>(mouseCode);
 	return os;
 }
 

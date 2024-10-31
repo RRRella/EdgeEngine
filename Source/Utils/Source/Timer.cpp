@@ -13,21 +13,12 @@ float Timer::TotalTime() const
 {
 	Duration totalTime = Duration::zero();
 
-    // Base   Stop       Start   Stop      Curr
-    //--*-------*----------*------*---------|
-    //          <---------->
-    //             Paused
     if (bIsStopped)    totalTime = (stopTime - baseTime) - pausedTime;
 
-    // Base         Stop      Start         Curr
-    //--*------------*----------*------------|
-    //               <---------->
-    //                  Paused
 	else totalTime = (currTime - baseTime) - pausedTime;
 
 	return totalTime.count();
 }
-
 
 float Timer::DeltaTime() const
 {
@@ -43,23 +34,23 @@ void Timer::Reset()
 
 void Timer::Start()
 {
+	Tick();
 	if (bIsStopped)
 	{
+		startTime = GetNow();
 		pausedTime = startTime - stopTime;
-		prevTime = GetNow();
 		bIsStopped = false;
 	}
-	Tick();
 }
 
 void Timer::Stop()
 {
-	Tick();
 	if (!bIsStopped)
 	{
 		stopTime = GetNow();
 		bIsStopped = true;
 	}
+	Tick();
 }
 
 float Timer::Tick()

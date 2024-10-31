@@ -56,6 +56,9 @@ bool SwapChain::Create(const FSwapChainCreateDesc& desc)
         return false;
     }
 
+    mbVsync = desc.pWindow->bVSync;
+    mbFullscreen = desc.pWindow->bFullscreen;
+
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     swapChainDesc.BufferCount = desc.numBackBuffers;
     swapChainDesc.Height = desc.pWindow->height;
@@ -65,11 +68,11 @@ bool SwapChain::Create(const FSwapChainCreateDesc& desc)
     swapChainDesc.SampleDesc.Count = 1;
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    swapChainDesc.Flags = desc.pWindow->bVSync
+    swapChainDesc.Flags = mbVsync
         ? 0
         : DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
-    if (desc.pWindow->bFullscreen)
+    if (mbFullscreen)
     {
         swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
     }
@@ -144,7 +147,7 @@ bool SwapChain::Create(const FSwapChainCreateDesc& desc)
     this->mRenderTargets.resize(this->mNumBackBuffers, nullptr);
 
     // Resize will handle RTV creation logic if its a Fullscreen SwapChain
-    if (desc.pWindow->bFullscreen)
+    if (mbFullscreen)
     {
         // TODO: the SetFullscreen here doesn't trigger WM_SIZE event, hence
         //       we have to call here. For now, we use the specified w and h,
@@ -193,12 +196,11 @@ void SwapChain::Resize(int w, int h)
         mFenceValues[i] = mFenceValues[mpSwapChain->GetCurrentBackBufferIndex()];
     }
 
-    const bool bVsync = true; // TODO
     mpSwapChain->ResizeBuffers(
         (UINT)this->mFenceValues.size(),
         w, h,
         this->mSwapChainFormat,
-        bVsync ? 0 : (DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING | DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH)
+        0
     );
 
     CreateRenderTargetViews();
@@ -276,9 +278,11 @@ void SwapChain::SetFullscreen(bool bState, int FSRecoveryWindowWidth, int FSReco
 
     const bool bRefreshRateIsInteger = mode.RefreshRate.Denominator == 1;
     if(bRefreshRateIsInteger)
-        Log::Info("SwapChain::SetFullscreen() Mode: %dx%d@%dHz" , mode.Width, mode.Height, mode.RefreshRate.Numerator);
+        Log::Info("SwapChain::SetFullscreen(%s) Mode: %dx%d@%dHz", (bState ? "true" : "false"),
+            mode.Width, mode.Height, mode.RefreshRate.Numerator);
     else
-        Log::Info("SwapChain::SetFullscreen() Mode: %dx%d@%.2fHz", mode.Width, mode.Height, (float)mode.RefreshRate.Numerator / mode.RefreshRate.Denominator);
+        Log::Info("SwapChain::SetFullscreen(%s) Mode: %dx%d@%.2fHz", (bState ? "true" : "false"), 
+            mode.Width, mode.Height, (float)mode.RefreshRate.Numerator / mode.RefreshRate.Denominator);
 }
 
 bool SwapChain::IsFullscreen(/*IDXGIOUtput* ?*/) const
