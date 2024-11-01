@@ -87,7 +87,7 @@ public:
 	void OnToggleFullscreen(HWND) override;
 	void OnWindowMinimize(IWindow* pWnd) override;
 	void OnWindowFocus(IWindow* pWnd) override;
-	void OnWindowClose(HWND hwnd_) override;
+	void OnWindowClose(HWND hwnd) override;
 
 	void OnKeyDown(HWND, WPARAM) override;
 	void OnKeyUp(HWND, WPARAM) override;

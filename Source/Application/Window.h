@@ -40,7 +40,7 @@ public:
 	virtual void OnToggleFullscreen(HWND) = 0;
 	virtual void OnWindowMinimize(IWindow* pWnd) = 0;
 	virtual void OnWindowFocus(IWindow* pWnd) = 0;
-	virtual void OnWindowClose(HWND hwnd_) = 0;
+	virtual void OnWindowClose(HWND) = 0;
 
 	virtual void OnKeyDown(HWND, WPARAM) = 0;
 	virtual void OnKeyUp(HWND, WPARAM) = 0;

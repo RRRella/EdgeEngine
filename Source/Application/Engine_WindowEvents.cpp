@@ -1,11 +1,11 @@
 #include "Engine.h"
 #include "Input.h"
-#include <Windowsx.h>
 
 constexpr int MIN_WINDOW_SIZE = 128;
 
 #define LOG_WINDOW_MESSAGE_EVENTS 0
 #define LOG_RAW_INPUT			  0
+
 static void LogWndMsg(UINT uMsg, HWND hwnd);
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -49,9 +49,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 		}
 		break; // Send all other WM_SYSKEYDOWN messages to the default WndProc.
-		//
-		// MOUSE
-		//
+
+	//
+	// MOUSE
+	//
 	case WM_MBUTTONDOWN: // wParam encodes which mouse key is pressed, unlike *BUTTONUP events
 	case WM_LBUTTONDOWN:
 	case WM_RBUTTONDOWN:
@@ -69,6 +70,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_MBUTTONUP: if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonUp(hwnd, MK_MBUTTON); return 0;
 	case WM_RBUTTONUP: if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonUp(hwnd, MK_RBUTTON); return 0;
 	case WM_LBUTTONUP: if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonUp(hwnd, MK_LBUTTON); return 0;
+
 #if ENABLE_RAW_INPUT
 	case WM_INPUT: if (pWindow->pOwner) pWindow->pOwner->OnMouseInput(hwnd, lParam);
 #else
@@ -83,28 +85,42 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 #endif // ENABLE_RAW_INPUT
 
 
+	}
+
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
-
-	}
 }
 
-void Engine::OnWindowCreate(IWindow * pWnd)
+
+
+void Engine::OnWindowCreate(IWindow* pWnd)
 {
 }
 
-void Engine::OnWindowClose(HWND hwnd_)
+void Engine::OnWindowResize(HWND hWnd)
 {
-	std::shared_ptr<WindowCloseEvent> ptr = std::make_shared<WindowCloseEvent>(hwnd_);
-	mWinEventQueue.AddItem(ptr);
+	RECT clientRect = {};
+	GetClientRect(hWnd, &clientRect);
+	int w = clientRect.right - clientRect.left;
+	int h = clientRect.bottom - clientRect.top;
 
-	std::unique_lock lck(ptr->mMtx);
+	// Due to multi-threading, this thread will record the events and 
+	// Render Thread will process the queue at the of a render loop
+	mWinEventQueue.AddItem(std::make_unique<WindowResizeEvent>(w, h, hWnd));
+}
 
-	ptr->mCondVar.wait(lck);
-	if (hwnd_ == mpWinMain->GetHWND())
-	{
-		PostQuitMessage(0); // must be called from the main thread.
-	}
-	GetWindow(hwnd_)->Close(); // must be called from the main thread.
+void Engine::OnToggleFullscreen(HWND hWnd)
+{
+	// Due to multi-threading, this thread will record the events and 
+	// Render Thread will process the queue at the of a render loop
+	mWinEventQueue.AddItem(std::make_unique<ToggleFullscreenEvent>(hWnd));
+}
+
+void Engine::OnWindowMinimize(IWindow* pWnd)
+{
+}
+
+void Engine::OnWindowFocus(IWindow* pWindow)
+{
 }
 
 void Engine::OnMouseButtonDown(HWND hwnd, WPARAM wParam, bool bIsDoubleClick)
@@ -126,38 +142,9 @@ void Engine::OnMouseMove(HWND hwnd, long x, long y)
 	mInputEventQueue.AddItem(std::make_unique<MouseMoveEvent>(hwnd, x, y));
 }
 
-void Engine::OnWindowResize(HWND hWnd)
-{
-	RECT clientRect = {};
-	GetClientRect(hWnd, &clientRect);
-	int w = clientRect.right - clientRect.left;
-	int h = clientRect.bottom - clientRect.top;
-	
-	// Due to multi-threading, this thread will record the events and 
-	// Render Thread will process the queue at the of a render loop
-	mWinEventQueue.AddItem(std::make_unique<WindowResizeEvent>(w, h, hWnd));
-}
-
-void Engine::OnToggleFullscreen(HWND hWnd)
-{
-	// Due to multi-threading, this thread will record the events and 
-	// Render Thread will process the queue at the of a render loop
-	mWinEventQueue.AddItem(std::make_unique<ToggleFullscreenEvent>(hWnd));
-}
-
-void Engine::OnWindowMinimize(IWindow* pWnd)
-{
-}
-
-void Engine::OnWindowFocus(IWindow* pWindow)
-{
-	//Log::Info("On Focus!");
-}
-
 void Engine::OnMouseInput(HWND hwnd, LPARAM lParam)
 {
 }
-
 
 void Engine::OnKeyDown(HWND hwnd, WPARAM wParam)
 {
@@ -165,12 +152,30 @@ void Engine::OnKeyDown(HWND hwnd, WPARAM wParam)
 	// Update Thread will process the queue at the beginning of an update loop
 	mInputEventQueue.AddItem(std::make_unique<KeyDownEvent>(hwnd, wParam));
 }
+
 void Engine::OnKeyUp(HWND hwnd, WPARAM wParam)
 {
 	// Due to multi-threading, this thread will record the events and 
 	// Update Thread will process the queue at the beginning of an update loop
 	mInputEventQueue.AddItem(std::make_unique<KeyUpEvent>(hwnd, wParam));
 }
+
+void Engine::OnWindowClose(HWND hwnd)
+{
+	std::shared_ptr<WindowCloseEvent> ptr = std::make_shared<WindowCloseEvent>(hwnd);
+	mWinEventQueue.AddItem(ptr);
+
+	std::unique_lock lck(ptr->mMtx);
+
+	ptr->mCondVar.wait(lck);
+	if (hwnd == mpWinMain->GetHWND())
+	{
+		PostQuitMessage(0); // must be called from the main thread.
+	}
+	GetWindow(hwnd)->Close(); // must be called from the main thread.
+}
+ 
+
 
 // ----------------------------------------------------------------------------------------------------
 static void LogWndMsg(UINT uMsg, HWND hwnd)
