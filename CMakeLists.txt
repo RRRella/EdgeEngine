@@ -27,6 +27,7 @@ set (Config
 set (Shaders
     "Source/Shaders/hello-triangle.hlsl"
     "Source/Shaders/hello-cube.hlsl"
+    "Source/Shaders/hello-file.hlsl"
     "Source/Shaders/FullscreenTriangle.hlsl"
 )
 
@@ -57,8 +58,10 @@ set (SourceEdgine
     "Source/Application/Engine_Render.cpp"
     "Source/Application/Engine_Update.cpp"
     "Source/Application/Engine_WindowEvents.cpp"
+    "Source/Application/Engine_EventHandlers.cpp"
     "Source/Application/Events.cpp"
     "Source/Application/Mesh.cpp"
+    "Source/Application/Math.cpp"
     "Source/Application/Geometry.cpp"
     "Source/Application/Input.cpp"
 )
@@ -66,6 +69,7 @@ set (SourceEdgine
 
 add_subdirectory(Source/Utils)
 add_subdirectory(Libs/D3D12MemoryAllocator)
+add_subdirectory(Libs/imgui)
 add_subdirectory(Source/Renderer)
 
 source_group("Config"   FILES ${Config})
@@ -96,4 +100,4 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${Includes})
 
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Renderer Utils)
+target_link_libraries(${PROJECT_NAME} PRIVATE Renderer Utils imgui)

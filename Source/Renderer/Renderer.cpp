@@ -84,63 +84,6 @@ void Renderer::Initialize(const FRendererInitializeParameters& params)
 	mComputeQueue.Create(pEdgeDevice, CommandQueue::ECommandQueueType::COMPUTE);
 	mCopyQueue.Create(pEdgeDevice, CommandQueue::ECommandQueueType::COPY);
 
-
-	// Create the present queues & swapchains associated with each window passed into the Renderer
-	// Swapchains contain their own render targets 
-	const size_t NumWindows = params.Windows.size();
-	for(size_t i = 0; i< NumWindows; ++i)
-	{
-		FWindowRepresentation& wnd = const_cast<FWindowRepresentation&>(params.Windows[i]);
-		
-
-		FWindowRenderContext ctx = {};
-
-		ctx.pDevice = pEdgeDevice;
-		ctx.PresentQueue.Create(ctx.pDevice, CommandQueue::ECommandQueueType::GFX); // Create the GFX queue for presenting the SwapChain
-		ctx.bVsync = wnd.bVSync; // we store bVSync in ctx instead of SwapChain and provide it through SwapChain.Present() param : either way should be fine
-
-		// Create the SwapChain
-		FSwapChainCreateDesc swapChainDesc = {};
-		swapChainDesc.numBackBuffers = NUM_SWAPCHAIN_BUFFERS;
-		swapChainDesc.pDevice = ctx.pDevice->GetDevicePtr();
-		swapChainDesc.pWindow = &wnd;
-		swapChainDesc.pCmdQueue = &ctx.PresentQueue;
-		swapChainDesc.pWindow->bVSync = ctx.bVsync;
-		swapChainDesc.pWindow->bFullscreen = wnd.bFullscreen;
-		ctx.SwapChain.Create(swapChainDesc);
-
-		// Create command allocators
-		ctx.mCommandAllocatorsGFX.resize(NUM_SWAPCHAIN_BUFFERS);
-		ctx.mCommandAllocatorsCompute.resize(NUM_SWAPCHAIN_BUFFERS);
-		ctx.mCommandAllocatorsCopy.resize(NUM_SWAPCHAIN_BUFFERS);
-		for (int f = 0; f < NUM_SWAPCHAIN_BUFFERS; ++f)
-		{
-			ID3D12CommandAllocator* pCmdAlloc = {};
-			pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT , IID_PPV_ARGS(&ctx.mCommandAllocatorsGFX[f]));
-			pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COMPUTE, IID_PPV_ARGS(&ctx.mCommandAllocatorsCompute[f]));
-			pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY   , IID_PPV_ARGS(&ctx.mCommandAllocatorsCopy[f]));
-			SetName(ctx.mCommandAllocatorsGFX[f], "RenderContext::CmdAllocGFX[%d]", f);
-			SetName(ctx.mCommandAllocatorsCompute[f], "RenderContext::CmdAllocCompute[%d]", f);
-			SetName(ctx.mCommandAllocatorsCopy[f], "RenderContext::CmdAllocCopy[%d]", f);
-		}
-
-		// Create command lists
-		pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, ctx.mCommandAllocatorsGFX[0], nullptr, IID_PPV_ARGS(&ctx.pCmdList_GFX));
-		
-		ctx.pCmdList_GFX->SetName(L"RenderContext::CmdListGFX");
-		ctx.pCmdList_GFX->Close();
-
-		// Create dynamic buffer heap
-		ctx.mDynamicHeap_ConstantBuffer.Create(pDevice, NUM_SWAPCHAIN_BUFFERS, 16 * MEGABYTE);
-
-		// Save other context data
-		ctx.MainRTResolutionX = wnd.width;
-		ctx.MainRTResolutionY = wnd.height;
-
-		// save the render context
-		this->mRenderContextLookup.emplace(wnd.hwnd, std::move(ctx));
-	}
-
 	// Initialize memory
 	InitializeD3D12MA();
 	InitializeHeaps();
@@ -230,6 +173,50 @@ short Renderer::GetSwapChainBackBufferCount(HWND hwnd) const
 	
 }
 
+void Renderer::InitializeRenderContext(FWindowRepresentation& WndDesc, int NumSwapchainBuffers)
+{
+	Device* pVQDevice = &mDevice;
+	ID3D12Device* pDevice = pVQDevice->GetDevicePtr();
+	FWindowRenderContext ctx = {};
+	ctx.pDevice = pVQDevice;
+	ctx.PresentQueue.Create(ctx.pDevice, CommandQueue::ECommandQueueType::GFX); // Create the GFX queue for presenting the SwapChain
+	ctx.bVsync = WndDesc.bVSync; // we store bVSync in ctx instead of SwapChain and provide it through SwapChain.Present() param : either way should be fine
+	// Create the SwapChain
+	FSwapChainCreateDesc swapChainDesc = {};
+	swapChainDesc.numBackBuffers = NumSwapchainBuffers;
+	swapChainDesc.pDevice = ctx.pDevice->GetDevicePtr();
+	swapChainDesc.pWindow = &WndDesc;
+	swapChainDesc.pCmdQueue = &ctx.PresentQueue;
+	swapChainDesc.bVSync = ctx.bVsync;
+	swapChainDesc.bFullscreen = WndDesc.bFullscreen;
+	ctx.SwapChain.Create(swapChainDesc);
+	// Create command allocators
+	ctx.mCommandAllocatorsGFX.resize(NumSwapchainBuffers);
+	ctx.mCommandAllocatorsCompute.resize(NumSwapchainBuffers);
+	ctx.mCommandAllocatorsCopy.resize(NumSwapchainBuffers);
+	for (int f = 0; f < NumSwapchainBuffers; ++f)
+	{
+		ID3D12CommandAllocator* pCmdAlloc = {};
+		pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&ctx.mCommandAllocatorsGFX[f]));
+		pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COMPUTE, IID_PPV_ARGS(&ctx.mCommandAllocatorsCompute[f]));
+		pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY, IID_PPV_ARGS(&ctx.mCommandAllocatorsCopy[f]));
+		SetName(ctx.mCommandAllocatorsGFX[f], "RenderContext::CmdAllocGFX[%d]", f);
+		SetName(ctx.mCommandAllocatorsCompute[f], "RenderContext::CmdAllocCompute[%d]", f);
+		SetName(ctx.mCommandAllocatorsCopy[f], "RenderContext::CmdAllocCopy[%d]", f);
+	}
+	// Create command lists
+	pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, ctx.mCommandAllocatorsGFX[0], nullptr, IID_PPV_ARGS(&ctx.pCmdList_GFX));
+	ctx.pCmdList_GFX->SetName(L"RenderContext::CmdListGFX");
+	ctx.pCmdList_GFX->Close();
+	// Create dynamic buffer heap
+	ctx.mDynamicHeap_ConstantBuffer.Create(pDevice, NumSwapchainBuffers, 16 * MEGABYTE);
+	// Save other context data
+	ctx.MainRTResolutionX = WndDesc.width;
+	ctx.MainRTResolutionY = WndDesc.height;
+	// save the render context
+	this->mRenderContextLookup.emplace(WndDesc.hwnd, std::move(ctx));
+}
+
 
 bool Renderer::CheckContext(HWND hwnd) const
 {
@@ -306,6 +293,8 @@ void Renderer::InitializeHeaps()
 	constexpr uint32 NumDescsUAV = 10;
 	constexpr bool   bCPUVisible = false;
 	mHeapCBV_SRV_UAV.Create(pDevice, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, NumDescsCBV + NumDescsSRV + NumDescsUAV, bCPUVisible);
+	mHeapImguiSRV.Create(pDevice, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 100000, bCPUVisible);
+
 
 	constexpr uint32 NumDescsDSV = 10;
 	mHeapDSV.Create(pDevice, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, NumDescsDSV);
@@ -397,6 +386,52 @@ void Renderer::LoadPSOs()
 
 
 	// Hello-World-Cube Root Signature : [2]
+	{
+		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
+
+		// This is the highest version the sample supports. If CheckFeatureSupport succeeds, the HighestVersion returned will not be greater than this.
+		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+
+		if (FAILED(pDevice->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
+		{
+			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+		}
+
+		CD3DX12_DESCRIPTOR_RANGE1 ranges[2];
+		ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+		ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+
+		CD3DX12_ROOT_PARAMETER1 rootParameters[2];
+		rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
+		rootParameters[1].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE, D3D12_SHADER_VISIBILITY_VERTEX);
+
+		D3D12_STATIC_SAMPLER_DESC sampler = {};
+		sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+		sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+		sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+		sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+		sampler.MipLODBias = 0;
+		sampler.MaxAnisotropy = 0;
+		sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+		sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+		sampler.MinLOD = 0.0f;
+		sampler.MaxLOD = D3D12_FLOAT32_MAX;
+		sampler.ShaderRegister = 0;
+		sampler.RegisterSpace = 0;
+		sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+		rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+		ComPtr<ID3DBlob> signature;
+		ComPtr<ID3DBlob> error;
+		ThrowIfFailed(D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, featureData.HighestVersion, &signature, &error));
+		ID3D12RootSignature* pRS = nullptr;
+		ThrowIfFailed(pDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&pRS)));
+		mpBuiltinRootSignatures.push_back(pRS);
+	}
+
+	// Hello-World-File Root Signature : [3]
 	{
 		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
 
@@ -556,6 +591,54 @@ void Renderer::LoadPSOs()
 		ThrowIfFailed(pDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mpBuiltinPSOs[EBuiltinPSOs::HELLO_WORLD_CUBE_PSO])));
 		SetName(mpBuiltinPSOs[EBuiltinPSOs::HELLO_WORLD_CUBE_PSO], "PSO_HelloCube");
 	}
+
+	// HELLO FILE PSO
+	{
+
+		ComPtr<ID3DBlob> vertexShader;
+		ComPtr<ID3DBlob> pixelShader;
+		ComPtr<ID3DBlob> errBlob;
+
+
+		HRESULT hr = D3DCompileFromFile(GetAssetFullPath(L"hello-file.hlsl").c_str(), nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, &errBlob);
+		if (FAILED(hr))
+		{
+			if (errBlob)
+			{
+				OutputDebugStringA((char*)errBlob->GetBufferPointer());
+				errBlob->Release();
+			}
+		}
+		ThrowIfFailed(D3DCompileFromFile(GetAssetFullPath(L"hello-file.hlsl").c_str(), nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, &errBlob));
+		// Define the vertex input layout.
+		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT   , 0, 0 , D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "NORMAL"  , 0, DXGI_FORMAT_R32G32B32_FLOAT   , 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT      , 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		};
+		// Describe and create the graphics pipeline state object (PSO).
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+		psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
+		psoDesc.pRootSignature = mpBuiltinRootSignatures[3];
+		psoDesc.VS = CD3DX12_SHADER_BYTECODE(vertexShader.Get());
+		psoDesc.PS = CD3DX12_SHADER_BYTECODE(pixelShader.Get());
+		psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+		psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		psoDesc.DepthStencilState.DepthEnable = TRUE;
+		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+		psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+		psoDesc.DepthStencilState.StencilEnable = FALSE;
+		psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+		psoDesc.SampleMask = UINT_MAX;
+		psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		psoDesc.NumRenderTargets = 1;
+		psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+		psoDesc.SampleDesc.Count = 1;
+		ThrowIfFailed(pDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mpBuiltinPSOs[EBuiltinPSOs::HELLO_WORLD_FILE_PSO])));
+		SetName(mpBuiltinPSOs[EBuiltinPSOs::HELLO_WORLD_FILE_PSO], "PSO_HelloFile");
+	}
 }
 
 void Renderer::LoadDefaultResources()
@@ -576,6 +659,11 @@ ID3D12DescriptorHeap* Renderer::GetDescHeap(EResourceHeapType HeapType)
 	case SAMPLER_HEAP:      pHeap = mHeapSampler.GetHeap(); break;
 	}
 	return pHeap;
+}
+
+ID3D12DescriptorHeap* Renderer::GetImguiHeap()
+{
+	return mHeapImguiSRV.GetHeap();
 }
 
 

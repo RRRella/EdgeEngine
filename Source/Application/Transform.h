@@ -20,7 +20,8 @@ public:
 	void SetYRotationDeg(float yDeg)              { _rotation = XMQuaternionRotationAxis(XMLoadFloat3(&UpVector), yDeg * DEG2RAD); }
 	void SetZRotationDeg(float zDeg)              { _rotation = XMQuaternionRotationAxis(XMLoadFloat3(&ForwardVector), zDeg * DEG2RAD); }
 	void SetScale(float x, float y, float z)      { _scale = XMFLOAT3(x, y, z); }
-	void SetScale(const XMFLOAT3& scl)   { _scale = scl; }
+	void SetScale(const XMFLOAT3& scl)            { _scale = scl; }
+	void SetScale(const DirectX::XMVECTOR& scl) { XMStoreFloat3(&_scale, scl); }
 	void SetUniformScale(float s)                 { _scale = XMFLOAT3(s, s, s); }
 	void SetPosition(float x, float y, float z)   { _position = XMFLOAT3(x, y, z); }
 	void SetPosition(const XMFLOAT3& pos){ _position = pos; }

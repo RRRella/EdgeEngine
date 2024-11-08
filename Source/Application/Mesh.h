@@ -14,6 +14,7 @@ enum EBuiltInMeshes
 	SPHERE,
 	CYLINDER,
 	CONE,
+	OBJ_FILE,
 	
 	NUM_BUILTIN_MESHES
 };
@@ -68,7 +69,7 @@ public:
 	std::pair<BufferID, BufferID> GetIABufferIDs(int lod = 0) const;
 	inline uint GetNumIndices(int lod = 0) const { return mNumIndicesPerLODLevel[lod]; }
 
-	
+	bool LoadFromFile(const std::string& path);
 private:
 	std::vector<VertexIndexBufferIDPair> mLODBufferPairs;
 	std::vector<uint> mNumIndicesPerLODLevel;

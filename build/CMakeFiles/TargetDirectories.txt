@@ -9,6 +9,9 @@ D:/Dev/Local/EdgeEngine/build/Libs/D3D12MemoryAllocator/CMakeFiles/INSTALL.dir
 D:/Dev/Local/EdgeEngine/build/Libs/D3D12MemoryAllocator/CMakeFiles/ALL_BUILD.dir
 D:/Dev/Local/EdgeEngine/build/Libs/D3D12MemoryAllocator/src/CMakeFiles/D3D12MemoryAllocator.dir
 D:/Dev/Local/EdgeEngine/build/Libs/D3D12MemoryAllocator/src/CMakeFiles/INSTALL.dir
+D:/Dev/Local/EdgeEngine/build/Libs/imgui/CMakeFiles/imgui.dir
+D:/Dev/Local/EdgeEngine/build/Libs/imgui/CMakeFiles/INSTALL.dir
+D:/Dev/Local/EdgeEngine/build/Libs/imgui/CMakeFiles/ALL_BUILD.dir
 D:/Dev/Local/EdgeEngine/build/Source/Renderer/CMakeFiles/Renderer.dir
 D:/Dev/Local/EdgeEngine/build/Source/Renderer/CMakeFiles/INSTALL.dir
 D:/Dev/Local/EdgeEngine/build/Source/Renderer/CMakeFiles/ALL_BUILD.dir

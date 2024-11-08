@@ -29,8 +29,8 @@
 
 FWindowRepresentation::FWindowRepresentation(const std::unique_ptr<Window>& pWnd, bool bVSyncIn, bool bFullscreenIn)
     : hwnd(pWnd->GetHWND())
-    , width(pWnd->GetWidth())
-    , height(pWnd->GetHeight())
+    , width(pWnd->IsFullscreen() ? pWnd->GetFullscreenWidth() : pWnd->GetWidth())
+    , height(pWnd->IsFullscreen() ? pWnd->GetFullscreenHeight() : pWnd->GetHeight())
     , bVSync(bVSyncIn)
     , bFullscreen(bFullscreenIn)
 {}
@@ -132,7 +132,6 @@ bool SwapChain::Create(const FSwapChainCreateDesc& desc)
     // otherwise we would set the heap's flag to D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
     RTVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-    ID3D12DescriptorHeap* rtvDescriptorHeap = nullptr;
     hr = this->mpDevice->CreateDescriptorHeap(&RTVHeapDesc, IID_PPV_ARGS(&this->mpDescHeapRTV));
     if (FAILED(hr))
     {
@@ -160,7 +159,6 @@ bool SwapChain::Create(const FSwapChainCreateDesc& desc)
     {
         CreateRenderTargetViews();
     }
-
 
     Log::Info("SwapChain: Created swapchain<hwnd=0x%x> w/ %d back buffers of %dx%d.", mHwnd, desc.numBackBuffers, desc.pWindow->width, desc.pWindow->height);
     return bSuccess;

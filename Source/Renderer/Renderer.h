@@ -73,6 +73,7 @@ enum EBuiltinPSOs
 	HELLO_WORLD_TRIANGLE_PSO = 0,
 	LOADING_SCREEN_PSO,
 	HELLO_WORLD_CUBE_PSO,
+	HELLO_WORLD_FILE_PSO,
 
 	NUM_BUILTIN_PSOs
 };
@@ -95,6 +96,7 @@ public:
 	void                         OnWindowSizeChanged(HWND hwnd, unsigned w, unsigned h);
 
 	// Swapchain-interface
+	void                         InitializeRenderContext(FWindowRepresentation& WndDesc, int NumSwapchainBuffers);
 	inline short                 GetSwapChainBackBufferCount(std::unique_ptr<Window>& pWnd) const { return GetSwapChainBackBufferCount(pWnd.get()); };
 	short                        GetSwapChainBackBufferCount(Window* pWnd) const;
 	short                        GetSwapChainBackBufferCount(HWND hwnd) const;
@@ -121,6 +123,7 @@ public:
 	inline ID3D12PipelineState*  GetPSO(EBuiltinPSOs pso) const { return mpBuiltinPSOs[pso]; }
 	inline ID3D12RootSignature*  GetRootSignature(int idx) const { return mpBuiltinRootSignatures[idx]; }
 	ID3D12DescriptorHeap*        GetDescHeap(EResourceHeapType HeapType);
+	ID3D12DescriptorHeap*		 GetImguiHeap();
 
 	// Getters: Resource Views
 	const VBV&                   GetVertexBufferView(BufferID Id) const;
@@ -155,6 +158,7 @@ private:
 	StaticResourceViewHeap                         mHeapDSV;
 	StaticResourceViewHeap                         mHeapCBV_SRV_UAV;
 	StaticResourceViewHeap                         mHeapSampler;
+	StaticResourceViewHeap						   mHeapImguiSRV;
 	UploadHeap                                     mHeapUpload;
 	StaticBufferHeap                               mStaticHeap_VertexBuffer;
 	StaticBufferHeap                               mStaticHeap_IndexBuffer;

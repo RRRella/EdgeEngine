@@ -11,13 +11,12 @@ constexpr char* BUILD_CONFIG = "Debug";
 #else
 constexpr char* BUILD_CONFIG = "Release";
 #endif
-constexpr char* ENGINE_VERSION = "v0.1.0";
+constexpr char* ENGINE_VERSION = "v0.3.0";
 
 
 void Engine::MainThread_Tick()
 {
-	// TODO: populate input queue and signal Update thread 
-	//       to drain the buffered input from the queue
+	MainThread_HandleEvents();
 }
 
 bool Engine::Initialize(const FStartupParameters& Params)
@@ -32,8 +31,8 @@ bool Engine::Initialize(const FStartupParameters& Params)
 	this->mSysInfo = SystemInfo::GetSystemInfo();
 	#endif
 	// -------------------------------------------------------------------------
-	InititalizeEngineSettings(Params);
-	InitializeApplicationWindows(Params);
+	InitializeEngineSettings(Params);
+	InitializeWindows(Params);
 	InitializeThreads();
 
 	return true;
@@ -45,7 +44,7 @@ void Engine::Exit()
 	ExitThreads();
 }
 
-void Engine::InititalizeEngineSettings(const FStartupParameters& Params)
+void Engine::InitializeEngineSettings(const FStartupParameters& Params)
 {
 	const FEngineSettings& p = Params.EngineSettings;
 
@@ -84,9 +83,9 @@ void Engine::InititalizeEngineSettings(const FStartupParameters& Params)
 	if (Params.bOverrideENGSetting_PreferredDisplay)            s.WndMain.PreferredDisplay = p.WndMain.PreferredDisplay;
 }
 
-void Engine::InitializeApplicationWindows(const FStartupParameters& Params)
+void Engine::InitializeWindows(const FStartupParameters& Params)
 {
-	auto fnInitializeWindows = [&](const FWindowSettings& settings, HINSTANCE hInstance, std::unique_ptr<Window>& pWin)
+	auto fnInitializeWindow = [&](const FWindowSettings& settings, HINSTANCE hInstance, std::unique_ptr<Window>& pWin, const std::string& WindowName)
 	{
 		FWindowDesc desc = {};
 		desc.width = settings.Width;
@@ -96,12 +95,16 @@ void Engine::InitializeApplicationWindows(const FStartupParameters& Params)
 		desc.pfnWndProc = WndProc;
 		desc.bFullscreen = settings.DisplayMode == EDisplayMode::EXCLUSIVE_FULLSCREEN;
 		desc.preferredDisplay = settings.PreferredDisplay;
-		pWin = std::make_unique<Window>(settings.Title, desc);
+		desc.iShowCmd = Params.iCmdShow;
+		desc.windowName = WindowName;
+		desc.pfnRegisterWindowName = &Engine::SetWindowName;
+		desc.pRegistrar = this;
+		pWin.reset(new Window(settings.Title, desc));
+		pWin->pOwner->OnWindowCreate(pWin->GetHWND());
 	};
 
-	fnInitializeWindows(mSettings.WndMain, Params.hExeInstance, mpWinMain);
+	fnInitializeWindow(mSettings.WndMain, Params.hExeInstance, mpWinMain, "Main Window");
 	Log::Info("Created main window<0x%x>: %dx%d", mpWinMain->GetHWND(), mpWinMain->GetWidth(), mpWinMain->GetHeight());
-
 }
 
 void Engine::InitializeThreads()
@@ -117,8 +120,8 @@ void Engine::InitializeThreads()
 	const size_t HWThreads = ThreadPool::sHardwareThreadCount;
 	const size_t HWCores   = HWThreads/2;
 	const size_t NumWorkers = HWCores - 2; // reserve 2 cores for (Update + Render) + Main threads
-	mUpdateWorkerThreads.Initialize(NumWorkers, mUpdateWorkerThreads.GetThreadPoolName());
-	mRenderWorkerThreads.Initialize(NumWorkers, mRenderWorkerThreads.GetThreadPoolName());
+	mUpdateWorkerThreads.Initialize(NumWorkers);
+	mRenderWorkerThreads.Initialize(NumWorkers);
 }
 
 void Engine::ExitThreads()
@@ -169,9 +172,10 @@ void Engine::RegisterWindowForInput(const std::unique_ptr<Window>& pWnd)
 {
 	if (pWnd)
 	{
-		mInputStates[pWnd->GetHWND()] = Input();
+		mInputStates.emplace(pWnd->GetHWND(), std::move(Input()));
 	}
 }
+
 void Engine::UnregisterWindowForInput(const std::unique_ptr<Window>& pWnd)
 {
 	if (pWnd)
@@ -183,9 +187,11 @@ void Engine::UnregisterWindowForInput(const std::unique_ptr<Window>& pWnd)
 			Log::Error("UnregisterWindowForInput() called with an unregistered Window<%x>", hwnd);
 			return;
 		}
+
 		mInputStates.erase(it);
 	}
 }
+
 
 
 static std::pair<std::string, std::string> ParseLineINI(const std::string& iniLine)
@@ -297,6 +303,7 @@ FStartupParameters Engine::ParseEngineSettingsFile()
 				params.bOverrideENGSetting_PreferredDisplay = true;
 				params.EngineSettings.WndMain.PreferredDisplay = ParseInt(SettingValue);
 			}
+			
 		}
 	}
 	else

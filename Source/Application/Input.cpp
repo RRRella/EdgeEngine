@@ -1,5 +1,6 @@
 #include "Input.h"
 #include "../Utils/Source/Log.h"
+#include "../Utils/Source/Utils.h"
 #include <algorithm>
 #include <cassert>
 #define VERBOSE_LOGGING 0
@@ -194,6 +195,21 @@ Input::Input()
 	mMouseButtonDoubleClicks = mMouseButtonsPrevious = mMouseButtons;
 }
 
+Input::Input(Input&& other)
+
+	: mbIgnoreInput(other.mbIgnoreInput.load())
+
+	, mMouseDelta(other.mMouseDelta)
+	, mMousePosition(other.mMousePosition)
+	, mMouseScroll(other.mMouseScroll)
+	, mMouseButtons(other.mMouseButtons)
+	, mMouseButtonsPrevious(other.mMouseButtonsPrevious)
+	, mMouseButtonDoubleClicks(other.mMouseButtonsPrevious)
+
+	, mKeys(other.mKeys)
+	, mKeysPrevious(other.mKeysPrevious)
+{}
+
 void Input::PostUpdate()
 {
 	mKeysPrevious = mKeys;
@@ -230,9 +246,9 @@ void Input::UpdateKeyDown(KeyDownEventData data)
 }
 
 
-void Input::UpdateKeyUp(KeyCode key)
+void Input::UpdateKeyUp(KeyCode key, bool bIsMouseKey)
 {
-	if (IsMouseKey(static_cast<WPARAM>(key)))
+	if (bIsMouseKey)
 	{
 		const MouseCode mouseBtn = static_cast<MouseCode>(key);
 
@@ -290,7 +306,7 @@ bool Input::IsKeyUp(KeyCode key) const
 
 bool Input::IsKeyTriggered(KeyCode key) const
 {
-	return !mKeysPrevious.at(key) && IsKeyDown(key) && !mbIgnoreInput;
+	return IsKeyDown(key) && !mKeysPrevious.at(key) && !mbIgnoreInput;
 }
 
 int Input::MouseDeltaX() const { return !mbIgnoreInput ? (int)mMouseDelta[0] : 0; }
@@ -327,4 +343,16 @@ bool Input::IsMouseScrollDown() const
 {
 	Log::Info("Input::IsMouseScrollDown() : scroll=%d", mMouseScroll);
 	return mMouseScroll < 0 && !mbIgnoreInput;
+}
+bool Input::IsAnyMouseDown() const
+{
+	return
+		mMouseButtons.at(MOUSE_BUTTON_LEFT)
+		|| mMouseButtons.at(MOUSE_BUTTON_RIGHT)
+		|| mMouseButtons.at(MOUSE_BUTTON_MIDDLE)
+
+		|| mMouseButtonDoubleClicks.at(MOUSE_BUTTON_RIGHT)
+		|| mMouseButtonDoubleClicks.at(MOUSE_BUTTON_MIDDLE)
+		|| mMouseButtonDoubleClicks.at(MOUSE_BUTTON_LEFT)
+		;
 }

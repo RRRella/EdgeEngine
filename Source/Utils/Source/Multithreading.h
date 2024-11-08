@@ -63,7 +63,7 @@ class ThreadPool
 public:
 	inline static const size_t sHardwareThreadCount = std::thread::hardware_concurrency();
 
-	void Initialize(size_t numWorkers, const std::string& ThreadPoolName);
+	void Initialize(size_t numWorkers);
 	void Destroy();
 
 	inline int GetNumActiveTasks() const { return IsExiting() ? 0 : mTaskQueue.GetNumActiveTasks(); };

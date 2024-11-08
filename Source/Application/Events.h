@@ -12,16 +12,23 @@
 //
 enum EEventType
 {
-	// Windows window-related events
+	// Windows->Edgine window events
 	WINDOW_RESIZE_EVENT = 0,
 	WINDOW_CLOSE_EVENT,
 	TOGGLE_FULLSCREEN_EVENT,
 	SET_FULLSCREEN_EVENT,
+
+	// Windows->Edgine input events
 	KEY_DOWN_EVENT,
 	KEY_UP_EVENT,
 	MOUSE_MOVE_EVENT,
 	MOUSE_INPUT_EVENT,
 	MOUSE_SCROLL_EVENT,
+
+	// Edgine->Windows window events
+	MOUSE_CAPTURE_EVENT,
+	HANDLE_WINDOW_TRANSITIONS_EVENT,
+	SHOW_WINDOW_EVENT,
 
 	NUM_EVENT_TYPES
 };
@@ -33,6 +40,29 @@ struct IEvent
 	EEventType mType = EEventType::NUM_EVENT_TYPES;
 	HWND       hwnd = 0;
 };
+
+// -------------------------------------------------------------------------------------
+struct SetMouseCaptureEvent : public IEvent
+{
+	SetMouseCaptureEvent(HWND hwnd_, bool bCap, bool bVis)
+		: IEvent(EEventType::MOUSE_CAPTURE_EVENT, hwnd_)
+		, bCapture(bCap)
+		, bVisible(bVis)
+	{}
+	bool bCapture = false;
+	bool bVisible = false;
+};
+
+struct HandleWindowTransitionsEvent : public IEvent
+{
+	HandleWindowTransitionsEvent(HWND hwnd_) : IEvent(EEventType::HANDLE_WINDOW_TRANSITIONS_EVENT, hwnd_) {}
+};
+
+struct ShowWindowEvent : public IEvent
+{
+	ShowWindowEvent(HWND hwnd_) : IEvent(EEventType::SHOW_WINDOW_EVENT, hwnd_) {}
+};
+// -------------------------------------------------------------------------------------
 
 
 struct WindowResizeEvent : public IEvent
@@ -73,10 +103,10 @@ class KeyDownEventData
 public:
 	using Tag = KeyDownEventData_Type;
 
-	KeyDownEventData(WPARAM wp) : mTag(Tag::KEYBOARD_DATA), keyboard(wp)
+	KeyDownEventData(WPARAM wp, bool bIsMouse) : mTag(Tag::KEYBOARD_DATA), keyboard(wp,false)
 	{}
 
-	KeyDownEventData(WPARAM wp, bool cl) : mTag(Tag::MOUSE_DATA), mouse(wp,cl)
+	KeyDownEventData(WPARAM wp, bool bIsMouse, bool cl) : mTag(Tag::MOUSE_DATA), mouse(wp,true, cl)
 	{}
 
 	Tag mTag;
@@ -85,14 +115,16 @@ public:
 	{
 		struct Keyboard
 		{
-			Keyboard(WPARAM wp) : wparam(wp) {}
+			Keyboard(WPARAM wp, bool bIsMouse) : wparam(wp), bMouse(bIsMouse) {}
 			WPARAM wparam = 0;
+			bool bMouse;
 		} keyboard;
 		struct Mouse
 		{
-			Mouse(WPARAM wp, bool cl) : wparam(wp), bDoubleClick(cl) {}
+			Mouse(WPARAM wp, bool bIsMouse, bool cl) : wparam(wp), bDoubleClick(cl), bMouse(bIsMouse) {}
 			WPARAM wparam = 0;
 			bool   bDoubleClick = false;
+			bool   bMouse;
 		} mouse;
 	};
 };
@@ -101,15 +133,20 @@ public:
 struct KeyDownEvent : public IEvent
 {
 	KeyDownEventData data;
-	KeyDownEvent(HWND hwnd_, WPARAM wparam_, bool bDoubleClick_ = false)
+	KeyDownEvent(HWND hwnd_, WPARAM wparam_, bool bIsMouseEvent)
 		: IEvent(EEventType::KEY_DOWN_EVENT, hwnd_)
-		, data(wparam_)
+		, data(wparam_, bIsMouseEvent)
+	{}
+	KeyDownEvent(HWND hwnd_, WPARAM wparam_, bool bIsMouseEvent, bool bDoubleClick_)
+		: IEvent(EEventType::KEY_DOWN_EVENT, hwnd_)
+		, data(wparam_, bIsMouseEvent, bDoubleClick_)
 	{}
 };
 struct KeyUpEvent : public IEvent
 {
-	KeyUpEvent(HWND hwnd_, WPARAM wparam_) : IEvent(EEventType::KEY_UP_EVENT, hwnd_), wparam(wparam_) {}
+	KeyUpEvent(HWND hwnd_, WPARAM wparam_, bool bIsMouse) : IEvent(EEventType::KEY_UP_EVENT, hwnd_), wparam(wparam_), bMouseEvent(bIsMouse) {}
 
+	bool bMouseEvent = false;
 	WPARAM wparam = 0;
 };
 

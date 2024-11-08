@@ -79,6 +79,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR pScmdl, int iCmdSh
 {
 	FStartupParameters StartupParameters = {};
 	StartupParameters.hExeInstance = hInst;
+	StartupParameters.iCmdShow = iCmdShow;
 	
 	srand(static_cast<unsigned>(time(NULL)));
 	

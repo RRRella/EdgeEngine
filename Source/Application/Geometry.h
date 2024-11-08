@@ -1,8 +1,39 @@
 #pragma once
 
 #include "Mesh.h"
+#include <fstream>
+#include <sstream>
+#include <DirectXMath.h>
+using namespace DirectX;
 
 #include <type_traits>
+
+namespace std
+{
+	template <> struct hash<FVertexWithNormal>
+	{
+		size_t operator()(const FVertexWithNormal& x) const
+		{
+			size_t size;
+			for (size_t i = 0; i < 3; ++i)
+			{
+				if (i < 2)
+				{
+					size ^= static_cast<size_t>(x.position[i]);
+					size ^= static_cast<size_t>(x.normal[i]);
+					size ^= static_cast<size_t>(x.uv[i]);
+				}
+				else
+				{
+					size ^= static_cast<size_t>(x.position[i]);
+					size ^= static_cast<size_t>(x.normal[i]);
+				}
+			}
+
+			return size;
+		}
+	};
+}
 
 namespace GeometryGenerator
 {
@@ -307,5 +338,186 @@ namespace GeometryGenerator
 	}
 
 
-};
+	template<class TVertex, class TIndex>
+	bool ParseObjFile(const std::string& path, GeometryData<TVertex, TIndex>& geo){}
 
+	template<>
+	inline bool ParseObjFile<FVertexWithNormal, unsigned int>(const std::string& path , GeometryData<FVertexWithNormal, unsigned int>& geo)
+	{
+		std::unordered_map<FVertexWithNormal, unsigned int> indexMap;
+	
+		struct VertexIndices
+		{
+			WORD posIndex;
+			WORD texIndex;
+			WORD norIndex;
+		};
+	
+		std::ifstream fileStream(path);
+		if (!fileStream)
+		{
+			Log::Error("Failed to open file path : %s");
+			return false;
+		}
+			 
+		std::string line;
+		std::istringstream ss;
+		std::vector<XMFLOAT3> positions = {  };
+		std::vector<XMFLOAT3> normals = {  };
+		std::vector<XMFLOAT2> texCoords = {  };
+		std::vector<std::vector<VertexIndices>> meshPolygons;
+	
+	
+		while (std::getline(fileStream, line))
+		{
+			if (line._Starts_with("v "))
+			{
+				float x, y, z;
+	
+				ss.clear();
+				ss.str(line);
+				ss.ignore(2);
+				ss >> x >> y >> z;
+	
+				positions.emplace_back(XMFLOAT3{ x,y,z });
+				continue;
+			}
+			else if (line._Starts_with("vt"))
+			{
+				float x, y;
+	
+				ss.clear();
+				ss.str(line);
+				ss.ignore(2);
+				ss >> x >> y;
+	
+				y = y - 2 * (y - 0.5f);
+	
+				texCoords.emplace_back(XMFLOAT2{ x,y });
+				continue;
+			}
+			else if (line._Starts_with("vn"))
+			{
+				float x, y, z;
+	
+				ss.clear();
+				ss.str(line);
+				ss.ignore(2);
+				ss >> x >> y >> z;
+	
+				normals.emplace_back(XMFLOAT3{ x,y,z });
+				continue;
+			}
+			else if (line._Starts_with("f "))
+			{
+				ss.clear();
+				ss.str(line);
+				ss.ignore(1);
+	
+				meshPolygons.emplace_back(std::vector<VertexIndices>{});
+	
+				while (static_cast<size_t>(ss.tellg()) <= line.size())
+				{
+					VertexIndices indices;
+	
+					if (ss.peek() == '/')
+					{
+						indices.posIndex = 0;
+					}
+					else
+					{
+						ss >> indices.posIndex;
+						indices.posIndex -= 1;
+					}
+					if (ss.peek() == '/')
+					{
+						ss.ignore(1);
+						if (ss.peek() == '/')
+						{
+							ss.ignore(1);
+							indices.texIndex = 0;
+							ss >> indices.norIndex;
+							indices.norIndex -= 1;
+							meshPolygons.back().emplace_back(indices);
+							continue;
+						}
+						ss >> indices.texIndex;
+						indices.texIndex -= 1;
+					}
+					else
+					{
+						indices.texIndex = 0;
+						indices.norIndex = 0;
+						meshPolygons.back().emplace_back(indices);
+						continue;
+					}
+					if (ss.peek() == '/')
+					{
+						ss.ignore(1);
+						ss >> indices.norIndex;
+						indices.norIndex -= 1;
+						meshPolygons.back().emplace_back(indices);
+					}
+					else
+					{
+						indices.norIndex = 0;
+						meshPolygons.back().emplace_back(indices);
+					}
+					ss >> std::ws;
+				}
+	
+			}
+		}
+	
+		//for now we preallocate our vertices with size of our positions
+		//which at leats is at that size but can be larger
+		//I don't any other way to estimate it's final size
+		geo.Vertices.reserve(positions.size());
+		indexMap.reserve(geo.Vertices.size());
+		indexMap.max_load_factor(2.0f);
+	
+		for (auto& polygon : meshPolygons)
+		{
+			std::vector<unsigned int> faceIDX;
+			faceIDX.reserve(polygon.size());
+	
+			for (auto& vertexIDX : polygon)
+			{
+				auto vertex = FVertexWithNormal{ {positions[vertexIDX.posIndex].x , positions[vertexIDX.posIndex].y ,positions[vertexIDX.posIndex].z},
+												 {normals[vertexIDX.norIndex].x   , normals[vertexIDX.norIndex].y   , normals[vertexIDX.norIndex].z },
+												 {texCoords[vertexIDX.texIndex].x , texCoords[vertexIDX.texIndex].y} };
+	
+				if (indexMap.find(vertex) == indexMap.end())
+				{
+					geo.Vertices.emplace_back(vertex);
+	
+					indexMap[vertex] = geo.Vertices.size() - 1;
+	
+					faceIDX.emplace_back(geo.Vertices.size() - 1);
+				}
+				else
+				{
+					faceIDX.emplace_back(indexMap[vertex]);
+				}
+			}
+	
+			for (int i = 2; i < faceIDX.size(); i++)
+			{
+				geo.Indices.emplace_back(faceIDX[0]);
+				geo.Indices.emplace_back(faceIDX[i - 1]);
+				geo.Indices.emplace_back(faceIDX[i]);
+			}
+		}
+
+		return true;
+	}
+	
+	template<class TVertex, class TIndex>
+	bool LoadObjFromFile(const std::string& path , GeometryData<TVertex, TIndex>& data);
+	
+	template<>
+	inline bool LoadObjFromFile<FVertexWithNormal , unsigned int>(const std::string& path, GeometryData<FVertexWithNormal, unsigned int>& data)
+	{
+		return ParseObjFile(path, data);
+	}
+};

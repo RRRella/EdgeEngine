@@ -136,6 +136,8 @@ enum class KeyCode : uint16_t
 	Menu = 348
 };
 
+
+
 inline uint16_t operator|(const KeyCode& a, const KeyCode& b)
 {
 	return static_cast<uint16_t>(static_cast<uint16_t>(a) | static_cast<uint16_t>(b));

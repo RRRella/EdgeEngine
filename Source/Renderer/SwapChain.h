@@ -28,6 +28,9 @@ struct FSwapChainCreateDesc
     FWindowRepresentation*       pWindow   = nullptr;
 	CommandQueue*                pCmdQueue = nullptr;
 
+	bool bVSync;
+	bool bFullscreen;
+
 	int numBackBuffers;
 };
 

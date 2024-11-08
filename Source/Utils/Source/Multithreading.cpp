@@ -25,14 +25,12 @@ static void SetThreadName(std::thread& th, const wchar_t* threadName) {
 	if (FAILED(hr)) {}
 }
 
-void ThreadPool::Initialize(size_t numThreads, const std::string& ThreadPoolName)
+void ThreadPool::Initialize(size_t numThreads)
 {
-	mThreadPoolName = ThreadPoolName;
 	mbStopWorkers.store(false);
 	for (auto i = 0u; i < numThreads; ++i)
 	{
 		mWorkers.emplace_back(std::thread(&ThreadPool::Execute, this));
-		SetThreadName(mWorkers.back(), StrUtil::ASCIIToUnicode(ThreadPoolName).c_str());
 	}
 }
 

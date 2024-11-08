@@ -23,11 +23,6 @@ static RECT CenterScreen(const RECT& screenRect, const RECT& wndRect)
     return centered;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-IWindow::~IWindow()
-{
-}
-
 static RECT GetScreenRectOnPreferredDisplay(const RECT& preferredRect, int PreferredDisplayIndex)
 {
     // handle preferred display
@@ -74,6 +69,13 @@ static RECT GetScreenRectOnPreferredDisplay(const RECT& preferredRect, int Prefe
     return bPreferredDisplayNotFound ? preferredScreenRect : CenterScreen(preferredScreenRect, preferredRect);
 }
 
+
+
+///////////////////////////////////////////////////////////////////////////////
+IWindow::~IWindow()
+{
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 Window::Window(const std::string& title, FWindowDesc& initParams)
     : IWindow(initParams.pWndOwner)
@@ -86,11 +88,11 @@ Window::Window(const std::string& title, FWindowDesc& initParams)
 
     ::RECT rect;
     ::SetRect(&rect, 0, 0, width_, height_);
-    //::AdjustWindowRect(&rect, FlagWindowStyle, FALSE);
+    ::AdjustWindowRect(&rect, FlagWindowStyle, FALSE);
 
     HWND hwnd_parent = NULL;
 
-    windowClass_.reset(new WindowClass("VQWindowClass", initParams.hInst, initParams.pfnWndProc));
+    windowClass_.reset(new WindowClass("WindowClass", initParams.hInst, initParams.pfnWndProc));
 
     RECT preferredScreenRect = GetScreenRectOnPreferredDisplay(rect, initParams.preferredDisplay);
 
@@ -114,7 +116,21 @@ Window::Window(const std::string& title, FWindowDesc& initParams)
         initParams.hInst,   // application handle
         NULL);   // used with multiple windows, NULL
 
+    if (initParams.pRegistrar && initParams.pfnRegisterWindowName)
+    {
+        (initParams.pRegistrar->*initParams.pfnRegisterWindowName)(hwnd_, initParams.windowName);
+    }
+
     windowStyle_ = FlagWindowStyle;
+
+    // TODO: initial Show() sets the resolution low for the first frame.
+    //       Workaround: RenderThread() calls HandleEvents() right before looping to handle the first ShowWindow() before Present().
+    ::ShowWindow(hwnd_, initParams.iShowCmd);
+
+    // set the data after the window shows up the first time.
+    // otherwise, the Focus event will be sent on ::ShowWindow() before 
+    // this function returns, causing issues dereferencing the smart
+    // pointer calling this ctor.
     ::SetWindowLongPtr(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR> (this));
 }
 
@@ -132,7 +148,7 @@ HWND Window::GetHWND() const
 void Window::Show()
 {
     ::ShowWindow(hwnd_, SW_SHOWDEFAULT);
-    //::UpdateWindow(hwnd_);
+    ::UpdateWindow(hwnd_);
 }
 
 void Window::Minimize()
@@ -186,6 +202,7 @@ void Window::ToggleWindowedFullscreen(SwapChain* pSwapChain /*= nullptr*/)
             DXGI_OUTPUT_DESC Desc;
             pOutput->GetDesc(&Desc);
             fullscreenWindowRect = Desc.DesktopCoordinates;
+            pOutput->Release();
         }
         else
         {
@@ -224,7 +241,9 @@ void Window::ToggleWindowedFullscreen(SwapChain* pSwapChain /*= nullptr*/)
 
 void Window::SetMouseCapture(bool bCapture)
 {
+#if VERBOSE_LOGGING
     Log::Warning("Capture Mouse: %d", bCapture);
+#endif
 
     isMouseCaptured_ = bCapture;
     if (bCapture)
@@ -241,18 +260,25 @@ void Window::SetMouseCapture(bool bCapture)
         rcClip.top += PX_OFFSET + PX_WND_TITLE_OFFSET;
         rcClip.bottom -= PX_OFFSET;
 
-        while (ShowCursor(FALSE) >= 0);
+        // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showcursor
+        int hr = ShowCursor(FALSE);
+        while (hr >= 0) hr = ShowCursor(FALSE);
+        switch (hr)
+        {
+        case -1: Log::Warning("ShowCursor(FALSE): No mouse is installed!"); break;
+        case 0: break;
+            //default: Log::Info("ShowCursor(FALSE): %d", hr); break;
+        }
+
         ClipCursor(&rcClip);
-        GetCursorPos(&mouseCapturePosition_);
-        //SetForegroundWindow(hwnd_);
-        //SetFocus(hwnd_);
+        SetForegroundWindow(hwnd_);
+        SetFocus(hwnd_);
     }
     else
     {
         ClipCursor(nullptr);
-        SetCursorPos(mouseCapturePosition_.x, mouseCapturePosition_.y);
         while (ShowCursor(TRUE) <= 0);
-        //SetForegroundWindow(NULL);
+        SetForegroundWindow(NULL);
         // SetFocus(NULL);	// we still want to register events
     }
 

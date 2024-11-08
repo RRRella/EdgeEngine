@@ -48,24 +48,120 @@ struct FVertexDefault
     float position[3];
     float uv[2];
 };
+
+inline bool operator==(const FVertexDefault& lhs, const FVertexDefault& rhs)
+{
+    for (size_t i = 0; i < 3; ++i)
+    {
+        if (i < 2)
+        {
+            if (lhs.position[i] != rhs.position[i] ||
+                lhs.uv[i] != rhs.uv[i])
+                return false;
+        }
+        else
+        {
+            if (lhs.position[i] != rhs.position[i])
+                return false;
+        }
+    }
+
+    return true;
+}
+
 struct FVertexWithColor
 {
     float position[3];
     float color[3];
     float uv[2];
 };
+
+inline bool operator==(const FVertexWithColor& lhs, const FVertexWithColor& rhs)
+{
+    for (size_t i = 0; i < 3; ++i)
+    {
+        if (i < 2)
+        {
+            if (lhs.position[i] != rhs.position[i] ||
+                lhs.color[i] != rhs.color[i] ||
+                lhs.uv[i] != rhs.uv[i])
+                return false;
+        }
+        else
+        {
+            if (lhs.position[i] != rhs.position[i] ||
+                lhs.color[i] != rhs.color[i])
+                return false;
+        }
+    }
+
+    return true;
+}
+
 struct FVertexWithColorAndAlpha
 {
     float position[3];
     float color[4];
     float uv[2];
 };
+
+inline bool operator==(const FVertexWithColorAndAlpha& lhs, const FVertexWithColorAndAlpha& rhs)
+{
+    for (size_t i = 0; i < 4; ++i)
+    {
+        if (i < 2)
+        {
+            if (lhs.position[i] != rhs.position[i] ||
+                lhs.color[i] != rhs.color[i] ||
+                lhs.uv[i] != rhs.uv[i])
+                return false;
+        }
+        else if(i < 3)
+        {
+            if (lhs.position[i] != rhs.position[i] ||
+                lhs.color[i] != rhs.color[i])
+                return false;
+        }
+        else
+        {
+            if (lhs.color[i] != rhs.color[i])
+                return false;
+        }
+    }
+
+    return true;
+}
+
 struct FVertexWithNormal
 {
     float position[3];
     float normal[3];
     float uv[2];
 };
+
+inline bool operator==(const FVertexWithNormal& lhs, const FVertexWithNormal& rhs)
+{
+    for (size_t i = 0; i < 3; ++i)
+    {
+        if (i < 2)
+        {
+            if (lhs.position[i] != rhs.position[i] ||
+                lhs.normal[i] != rhs.normal[i] ||
+                lhs.uv[i] != rhs.uv[i])
+                return false;
+        }
+        else
+        {
+            if (lhs.position[i] != rhs.position[i] ||
+                lhs.normal[i] != rhs.normal[i])
+                return false;
+        }
+    }
+
+    return true;
+}
+
+
 struct FVertexWithNormalAndTangent
 {
     float position[3];
@@ -74,6 +170,29 @@ struct FVertexWithNormalAndTangent
     float uv[2];
 };
 
+inline bool operator==(const FVertexWithNormalAndTangent& lhs, const FVertexWithNormalAndTangent& rhs)
+{
+    for (size_t i = 0; i < 3; ++i)
+    {
+        if (i < 2)
+        {
+            if (lhs.position[i] != rhs.position[i] ||
+                lhs.tangent[i]  != rhs.tangent[i]  ||
+                lhs.normal[i]   != rhs.normal[i]   ||
+                lhs.uv[i] != rhs.uv[i])
+                return false;
+        }
+        else
+        {
+            if (lhs.position[i] != rhs.position[i] ||
+                lhs.tangent[i] != rhs.tangent[i]   ||
+                lhs.normal[i] != rhs.normal[i])
+                return false;
+        }
+    }
+
+    return true;
+}
 
 class StaticBufferHeap
 {

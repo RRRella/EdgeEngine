@@ -23,23 +23,37 @@ Camera::Camera()
 Camera::~Camera(void)
 {}
 
-void Camera::InitializeCamera(const CameraData& data, int ViewportX, int ViewportY)
+void Camera::InitializeCamera(const CameraData& data)
 {
 	const auto& NEAR_PLANE = data.nearPlane;
 	const auto& FAR_PLANE = data.farPlane;
-	const float AspectRatio = static_cast<float>(ViewportX) / ViewportY;
+	const float AspectRatio = data.width / data.height;
 	const float VerticalFoV = data.fovV_Degrees * DEG2RAD;
+	const float& ViewportX = data.width;
+	const float& ViewportY = data.height;
 
-	SetProjectionMatrix(VerticalFoV, AspectRatio, NEAR_PLANE, FAR_PLANE);
+	this->mProjParams.NearZ = NEAR_PLANE;
+	this->mProjParams.FarZ = FAR_PLANE;
+	this->mProjParams.ViewporHeight = ViewportY;
+	this->mProjParams.ViewporWidth = ViewportX;
+	this->mProjParams.FieldOfView = data.fovV_Degrees * DEG2RAD;
+	this->mProjParams.bPerspectiveProjection = data.bPerspectiveProjection;
+
+	SetProjectionMatrix(this->mProjParams);
 
 	SetPosition(data.x, data.y, data.z);
 	mYaw = mPitch = 0;
 	Rotate(data.yaw * DEG2RAD, data.pitch * DEG2RAD, 1.0f);
 }
 
-void Camera::SetProjectionMatrix(float fovy, float screenAspect, float screenNear, float screenFar)
+void Camera::SetProjectionMatrix(const ProjectionMatrixParameters& params)
 {
-	XMStoreFloat4x4(&mMatProj, XMMatrixPerspectiveFovLH(fovy, screenAspect, screenNear, screenFar));
+	assert(params.ViewporHeight > 0.0f);
+	const float AspectRatio = params.ViewporWidth / params.ViewporHeight;
+
+	mMatProj = params.bPerspectiveProjection
+		? MakePerspectiveProjectionMatrix(params.FieldOfView, AspectRatio, params.NearZ, params.FarZ)
+		: MakeOthographicProjectionMatrix(params.ViewporWidth, params.ViewporHeight, params.NearZ, params.FarZ);
 }
 void Camera::Update(const float dt, const CameraInput& input)
 {
@@ -80,10 +94,6 @@ XMMATRIX Camera::GetViewInverseMatrix() const
 XMMATRIX Camera::GetProjectionMatrix() const
 {
 	return  XMLoadFloat4x4(&mMatProj);
-}
-FrustumPlaneset Camera::GetViewFrustumPlanes() const
-{
-	return FrustumPlaneset::ExtractFromMatrix(GetViewMatrix() * GetProjectionMatrix());
 }
 XMMATRIX Camera::GetRotationMatrix() const
 {

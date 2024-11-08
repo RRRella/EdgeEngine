@@ -35,13 +35,16 @@ private:
 class IWindowOwner
 {
 public:
-	virtual void OnWindowCreate(IWindow* pWnd) = 0;
+	virtual void OnWindowCreate(HWND hwnd_) = 0;
 	virtual void OnWindowResize(HWND) = 0;
 	virtual void OnToggleFullscreen(HWND) = 0;
-	virtual void OnWindowMinimize(IWindow* pWnd) = 0;
-	virtual void OnWindowFocus(IWindow* pWnd) = 0;
-	virtual void OnWindowClose(HWND) = 0;
-
+	virtual void OnWindowMinimize(HWND hwnd_) = 0;
+	virtual void OnWindowFocus(HWND hwnd_) = 0;
+	virtual void OnWindowLoseFocus(HWND hwnd_) = 0;
+	virtual void OnWindowClose(HWND hwnd_) = 0;
+	virtual void OnWindowActivate(HWND hwnd_) = 0;
+	virtual void OnWindowDeactivate(HWND hwnd_) = 0;
+	
 	virtual void OnKeyDown(HWND, WPARAM) = 0;
 	virtual void OnKeyUp(HWND, WPARAM) = 0;
 
@@ -62,19 +65,19 @@ public:
 
 	virtual ~IWindow();
 
-	virtual void Show() = 0;
+	virtual void Show()     = 0;
 	virtual void ToggleWindowedFullscreen(SwapChain* pSwapChain = nullptr) = 0;
 	virtual void Minimize() = 0;
 	virtual void SetMouseCapture(bool bCapture) = 0;
-	virtual void Close() = 0;
+	virtual void Close()    = 0;
 
 	bool IsClosed() const;
 	bool IsFullscreen() const;
 	bool IsMouseCaptured() const;
 
-	inline int GetWidth() const { return GetWidthImpl(); }
-	inline int GetHeight() const { return GetHeightImpl(); }
-	inline int GetFullscreenWidth() const { return GetFullscreenWidthImpl(); }
+	inline int GetWidth() const            { return GetWidthImpl(); }
+	inline int GetHeight() const           { return GetHeightImpl(); }
+	inline int GetFullscreenWidth() const  { return GetFullscreenWidthImpl(); }
 	inline int GetFullscreenHeight() const { return GetFullscreenHeightImpl(); }
 
 	IWindowOwner* pOwner;
@@ -91,6 +94,8 @@ private:
 
 using pfnWndProc_t = LRESULT(CALLBACK*)(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+class Engine;
+
 struct FWindowDesc
 {
 	int width = -1;
@@ -100,7 +105,16 @@ struct FWindowDesc
 	IWindowOwner* pWndOwner = nullptr;
 	bool bFullscreen = false;
 	int preferredDisplay = 0;
+	int iShowCmd;
+	std::string windowName;
+
+	using Registrar_t = Engine;
+	void (Registrar_t::* pfnRegisterWindowName)(HWND hwnd, const std::string& WindowName);
+	Registrar_t* pRegistrar;
 };
+
+
+#define __MUST_BE_CALLED_FROM_WINMAIN_THREAD__
 
 class Window : public IWindow
 {
@@ -109,11 +123,11 @@ public:
 
 	HWND GetHWND() const;
 
-	void Show() override;
-	void Minimize() override;
-	void Close() override; // must be called from the WinMain Thread
-	void ToggleWindowedFullscreen(SwapChain* pSwapChain = nullptr) override;
-	void SetMouseCapture(bool bCapture) override;
+	void __MUST_BE_CALLED_FROM_WINMAIN_THREAD__ Show() override;
+	void                                        Minimize() override;
+	void                                        ToggleWindowedFullscreen(SwapChain* pSwapChain = nullptr) override;
+	void __MUST_BE_CALLED_FROM_WINMAIN_THREAD__ Close() override;
+	void __MUST_BE_CALLED_FROM_WINMAIN_THREAD__ SetMouseCapture(bool bCapture) override;
 
 	inline void OnResize(int w, int h) { width_ = w; height_ = h; }
 	inline void SetFullscreen(bool b) { isFullscreen_ = b; }
@@ -137,5 +151,4 @@ private:
 	UINT windowStyle_;
 	int FSwidth_ = -1, FSheight_ = -1;
 	bool isMouseCaptured_ = false;
-	POINT mouseCapturePosition_ = { 0, 0 };
 };

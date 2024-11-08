@@ -1,30 +1,53 @@
 #include "Engine.h"
 #include "Input.h"
 
-constexpr int MIN_WINDOW_SIZE = 128;
+#include <Windowsx.h>
+
+constexpr int MIN_WINDOW_SIZE = 128; // make sure window cannot be resized smaller than 128x128
 
 #define LOG_WINDOW_MESSAGE_EVENTS 0
-#define LOG_RAW_INPUT			  0
-
+#define LOG_RAW_INPUT             0
+#define LOG_CALLBACKS             0
 static void LogWndMsg(UINT uMsg, HWND hwnd);
 
+
+// ===================================================================================================================================
+// WINDOW PROCEDURE
+// ===================================================================================================================================
 LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	LogWndMsg(uMsg, hwnd);
-
 	IWindow* pWindow = reinterpret_cast<IWindow*> (::GetWindowLongPtr(hwnd, GWLP_USERDATA));
 	if (!pWindow)
 	{
-		//Log::Warning("WndProc::pWindow=nullptr");
+		// WM_CREATE will be sent before SetWindowLongPtr() is called, 
+		// hence we'll call OnWindowCreate from inside Window class.
+		///if(uMsg == WM_CREATE) Log::Warning("WM_CREATE without pWindow");
+
+#if 0
+		Log::Warning("WndProc::pWindow=nullptr");
+#endif
 		return DefWindowProc(hwnd, uMsg, wParam, lParam);
 	}
 
-	switch (uMsg)
-	{
 
-	case WM_CREATE: if (pWindow->pOwner) pWindow->pOwner->OnWindowCreate(pWindow); return 0;
+	switch (uMsg) // HANDLE EVENTS
+	{
+		//
+		// WINDOW
+		//
+		// https://docs.microsoft.com/en-us/windows/win32/learnwin32/managing-application-state-
+
+		// https://docs.microsoft.com/en-us/windows/win32/learnwin32/writing-the-window-procedure
 	case WM_SIZE:   if (pWindow->pOwner) pWindow->pOwner->OnWindowResize(hwnd); return 0;
-	case WM_PAINT:
+	case WM_GETMINMAXINFO:
+	{
+		LPMINMAXINFO lpMMI = (LPMINMAXINFO)lParam;
+		lpMMI->ptMinTrackSize.x = MIN_WINDOW_SIZE;
+		lpMMI->ptMinTrackSize.y = MIN_WINDOW_SIZE;
+		break;
+	}
+	case WM_PAINT: // https://docs.microsoft.com/en-us/windows/win32/learnwin32/painting-the-window
 	{
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hwnd, &ps);
@@ -32,13 +55,53 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		EndPaint(hwnd, &ps);
 		return 0;
 	}
-	case WM_SETFOCUS: if (pWindow->pOwner) pWindow->pOwner->OnWindowFocus(pWindow); return 0;
+
+	// https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-setfocus
+	case WM_SETFOCUS: if (pWindow->pOwner) pWindow->pOwner->OnWindowFocus(hwnd); return 0;
+		// https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-killfocus
+	case WM_KILLFOCUS: if (pWindow->pOwner) pWindow->pOwner->OnWindowLoseFocus(hwnd); return 0;
+
+		// https://docs.microsoft.com/en-us/windows/win32/learnwin32/closing-the-window
 	case WM_CLOSE:    if (pWindow->pOwner) pWindow->pOwner->OnWindowClose(hwnd); return 0;
 	case WM_DESTROY:  return 0;
 
+		// https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-activate
+	case WM_ACTIVATE:
+		if (pWindow->pOwner)
+		{
+			// wParam:
+			// - The low-order word specifies whether the window is being activated or deactivated.
+			// - The high-order word specifies the minimized state of the window being activated or deactivated
+			// - A nonzero value indicates the window is minimized.
+
+
+			// **** **** **** **** **** **** **** **** = wParam <-- (32-bits)
+			// 0000 0000 0000 0000 1111 1111 1111 1111 = 0xFFFF <-- LOWORD(Wparam)
+			UINT wparam_hi = HIWORD(wParam);
+			UINT wparam_low = LOWORD(wParam);
+
+			const bool bWindowInactivation = wparam_low == WA_INACTIVE;
+			const bool bWindowActivation = (wparam_low == WA_ACTIVE) || (wparam_low == WA_CLICKACTIVE);
+
+
+			// lParam:
+			// - A handle to the window being activated or deactivated, depending on the value of the wParam parameter.
+			// - If the low-order word of wParam is WA_INACTIVE, lParam is the handle to the window being activated
+			// - if the low-order word of wParam is WA_ACTIVE or WA_CLICKACTIVE, lParam is the handle to the window being deactivated. 
+			//   This handle can be NULL.
+			HWND hwnd = reinterpret_cast<HWND>(lParam);
+			if (bWindowInactivation)
+				pWindow->pOwner->OnWindowActivate(hwnd);
+			else if (hwnd != NULL)
+				pWindow->pOwner->OnWindowDeactivate(hwnd);
+		}
+		return 0;
+
+		//
+		// KEYBOARD
+		//
 	case WM_KEYDOWN: if (pWindow->pOwner) pWindow->pOwner->OnKeyDown(hwnd, wParam); return 0;
 	case WM_KEYUP:   if (pWindow->pOwner) pWindow->pOwner->OnKeyUp(hwnd, wParam);   return 0;
-
 	case WM_SYSKEYDOWN:
 		if ((wParam == VK_RETURN) && (lParam & (1 << 29))) // Handle ALT+ENTER
 		{
@@ -47,12 +110,15 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				pWindow->pOwner->OnToggleFullscreen(hwnd);
 				return 0;
 			}
-		}
-		break; // Send all other WM_SYSKEYDOWN messages to the default WndProc.
+		} break; // Send all other WM_SYSKEYDOWN messages to the default WndProc.
 
-	//
-	// MOUSE
-	//
+		// Turn off MessageBeep sound on Alt+Enter: https://stackoverflow.com/questions/3662192/disable-messagebeep-on-invalid-syskeypress
+	case WM_MENUCHAR: return MNC_CLOSE << 16;
+
+
+		//
+		// MOUSE
+		//
 	case WM_MBUTTONDOWN: // wParam encodes which mouse key is pressed, unlike *BUTTONUP events
 	case WM_LBUTTONDOWN:
 	case WM_RBUTTONDOWN:
@@ -66,12 +132,17 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			pWindow->pOwner->OnMouseButtonDown(hwnd, wParam, true);
 			pWindow->pOwner->OnMouseButtonDown(hwnd, wParam, true);
 		}
+		return 0;
 
+		// For mouse button up events, wParam=0 for some reason, as opposed to the documentation
+		// https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-lbuttonup
+		// hence we handle each case individually here with the proper key code.
 	case WM_MBUTTONUP: if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonUp(hwnd, MK_MBUTTON); return 0;
 	case WM_RBUTTONUP: if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonUp(hwnd, MK_RBUTTON); return 0;
 	case WM_LBUTTONUP: if (pWindow->pOwner) pWindow->pOwner->OnMouseButtonUp(hwnd, MK_LBUTTON); return 0;
 
-#if ENABLE_RAW_INPUT
+
+#if ENABLE_RAW_INPUT // https://msdn.microsoft.com/en-us/library/windows/desktop/ee418864.aspx
 	case WM_INPUT: if (pWindow->pOwner) pWindow->pOwner->OnMouseInput(hwnd, lParam);
 #else
 
@@ -83,101 +154,188 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		if (pWindow->pOwner) pWindow->pOwner->OnMouseScroll(hwnd, zDelta); return 0;
 	}
 #endif // ENABLE_RAW_INPUT
-
-
 	}
+
 
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
 
 
-void Engine::OnWindowCreate(IWindow* pWnd)
-{
-}
 
+
+// ===================================================================================================================================
+// WINDOW EVENTS
+// ===================================================================================================================================
+// Due to multi-threading, this thread will record the events and 
+// Render Thread will process the queue at the beginning & end of a render loop
 void Engine::OnWindowResize(HWND hWnd)
 {
+	// https://docs.microsoft.com/en-us/windows/win32/direct3ddxgi/d3d10-graphics-programming-guide-dxgi#handling-window-resizing
 	RECT clientRect = {};
 	GetClientRect(hWnd, &clientRect);
 	int w = clientRect.right - clientRect.left;
 	int h = clientRect.bottom - clientRect.top;
 
-	// Due to multi-threading, this thread will record the events and 
-	// Render Thread will process the queue at the of a render loop
-	mWinEventQueue.AddItem(std::make_unique<WindowResizeEvent>(w, h, hWnd));
+#if 0 // MinWindowSize prevents the crash from h==0, no need for the code below.
+	if (h == 0) { h = 8; Log::Warning("WND RESIZE TOO SMALL"); }
+	if (w == 0) { w = 8; Log::Warning("WND RESIZE TOO SMALL"); }
+#endif
+
+	mEventQueue_WinToEdgine_Renderer.AddItem(std::make_unique<WindowResizeEvent>(w, h, hWnd));
 }
 
 void Engine::OnToggleFullscreen(HWND hWnd)
 {
-	// Due to multi-threading, this thread will record the events and 
-	// Render Thread will process the queue at the of a render loop
-	mWinEventQueue.AddItem(std::make_unique<ToggleFullscreenEvent>(hWnd));
+	mEventQueue_WinToEdgine_Renderer.AddItem(std::make_unique<ToggleFullscreenEvent>(hWnd));
 }
 
-void Engine::OnWindowMinimize(IWindow* pWnd)
+//------------------------------------------------------------------------------------
+// windows ACTIVATE msg contains the other HWND that the application switches to.
+// this could be an HWND of any program on the user machine, so ensure VQEngine
+// owns the hWnd before calling GetWindowName() for OnWindowActivate() and 
+// OnWindowDeactivate().
+//------------------------------------------------------------------------------------
+void Engine::OnWindowActivate(HWND hWnd)
+{
+	if (IsWindowRegistered(hWnd))
+	{
+#if LOG_CALLBACKS
+		Log::Warning("OnWindowActivate<%0x, %s>", hWnd, GetWindowName(hWnd).c_str());
+#endif
+	}
+}
+void Engine::OnWindowDeactivate(HWND hWnd)
+{
+	if (IsWindowRegistered(hWnd))
+	{
+#if LOG_CALLBACKS
+		Log::Warning("OnWindowDeactivate<%0x, %s> ", hWnd, GetWindowName(hWnd).c_str());
+#endif
+	}
+}
+//------------------------------------------------------------------------------------
+
+void Engine::OnWindowCreate(HWND hWnd)
+{
+#if LOG_CALLBACKS
+	Log::Info("OnWindowCreate<%0x, %s> ", hWnd, GetWindowName(hWnd).c_str());
+#endif
+}
+
+void Engine::OnWindowClose(HWND hwnd_)
+{
+	std::shared_ptr<WindowCloseEvent> ptr = std::make_shared<WindowCloseEvent>(hwnd_);
+	mEventQueue_WinToEdgine_Renderer.AddItem(ptr);
+
+	std::unique_lock lock(ptr->mMtx);
+
+	ptr->mCondVar.wait(lock);
+	if (hwnd_ == mpWinMain->GetHWND())
+	{
+		PostQuitMessage(0); // must be called from the main thread.
+	}
+	GetWindow(hwnd_)->Close(); // must be called from the main thread.
+}
+
+void Engine::OnWindowMinimize(HWND hwnd)
 {
 }
 
-void Engine::OnWindowFocus(IWindow* pWindow)
+void Engine::OnWindowFocus(HWND hwnd)
 {
+	const bool bMainWindowFocused = hwnd == mpWinMain->GetHWND();
+
+#if LOG_CALLBACKS
+	Log::Warning("OnWindowFocus<%x, %s>", hwnd, this->GetWindowName(hwnd).c_str());
+#endif
+
+	// make sure the mouse becomes visible when Main Window is not the one that is focused
+	if (bMainWindowFocused)
+		this->SetMouseCaptureForWindow(mpWinMain->GetHWND(), true);
 }
 
-void Engine::OnMouseButtonDown(HWND hwnd, WPARAM wParam, bool bIsDoubleClick)
+void Engine::OnWindowLoseFocus(HWND hwnd)
 {
-	mInputEventQueue.AddItem(std::make_unique<KeyDownEvent>(hwnd, wParam, bIsDoubleClick));
+#if LOG_CALLBACKS
+	Log::Warning("OnWindowLoseFocus<%x, %s>", hwnd, this->GetWindowName(hwnd).c_str());
+#endif
+
+	// make sure the mouse becomes visible when Main Window is not the one that is focused
+	if (hwnd == mpWinMain->GetHWND() && mpWinMain->IsMouseCaptured())
+		this->SetMouseCaptureForWindow(mpWinMain->GetHWND(), false);
 }
 
-void Engine::OnMouseButtonUp(HWND hwnd, WPARAM wParam)
-{
-	mInputEventQueue.AddItem(std::make_unique<KeyUpEvent>(hwnd, wParam));
-}
-void Engine::OnMouseScroll(HWND hwnd, short scroll)
-{
-	mInputEventQueue.AddItem(std::make_unique<MouseScrollEvent>(hwnd, scroll));
-}
-void Engine::OnMouseMove(HWND hwnd, long x, long y)
-{
-	//Log::Info("MouseMove : (%ld, %ld)", x, y);
-	mInputEventQueue.AddItem(std::make_unique<MouseMoveEvent>(hwnd, x, y));
-}
 
-void Engine::OnMouseInput(HWND hwnd, LPARAM lParam)
-{
-}
 
+// ===================================================================================================================================
+// KEYBOARD EVENTS
+// ===================================================================================================================================
+// Due to multi-threading, this thread will record the events and 
+// Update Thread will process the queue at the beginning of an update loop
 void Engine::OnKeyDown(HWND hwnd, WPARAM wParam)
 {
-	// Due to multi-threading, this thread will record the events and 
-	// Update Thread will process the queue at the beginning of an update loop
-	mInputEventQueue.AddItem(std::make_unique<KeyDownEvent>(hwnd, wParam));
+	constexpr bool bIsMouseEvent = false;
+	mEventQueue_WinToEdgine_Update.AddItem(std::make_unique<KeyDownEvent>(hwnd, wParam, bIsMouseEvent));
 }
 
 void Engine::OnKeyUp(HWND hwnd, WPARAM wParam)
 {
-	// Due to multi-threading, this thread will record the events and 
-	// Update Thread will process the queue at the beginning of an update loop
-	mInputEventQueue.AddItem(std::make_unique<KeyUpEvent>(hwnd, wParam));
+	constexpr bool bIsMouseEvent = false;
+	mEventQueue_WinToEdgine_Update.AddItem(std::make_unique<KeyUpEvent>(hwnd, wParam, bIsMouseEvent));
 }
 
-void Engine::OnWindowClose(HWND hwnd)
+
+// ===================================================================================================================================
+// MOUSE EVENTS
+// ===================================================================================================================================
+// Due to multi-threading, this thread will record the events and 
+// Update Thread will process the queue at the beginning of an update loop
+void Engine::OnMouseButtonDown(HWND hwnd, WPARAM wParam, bool bIsDoubleClick)
 {
-	std::shared_ptr<WindowCloseEvent> ptr = std::make_shared<WindowCloseEvent>(hwnd);
-	mWinEventQueue.AddItem(ptr);
-
-	std::unique_lock lck(ptr->mMtx);
-
-	ptr->mCondVar.wait(lck);
-	if (hwnd == mpWinMain->GetHWND())
-	{
-		PostQuitMessage(0); // must be called from the main thread.
-	}
-	GetWindow(hwnd)->Close(); // must be called from the main thread.
+	constexpr bool bIsMouseEvent = true;
+	mEventQueue_WinToEdgine_Update.AddItem(std::make_unique<KeyDownEvent>(hwnd, wParam, bIsMouseEvent, bIsDoubleClick));
 }
- 
+
+void Engine::OnMouseButtonUp(HWND hwnd, WPARAM wParam)
+{
+	constexpr bool bIsMouseEvent = true;
+	mEventQueue_WinToEdgine_Update.AddItem(std::make_unique<KeyUpEvent>(hwnd, wParam, bIsMouseEvent));
+}
+
+void Engine::OnMouseScroll(HWND hwnd, short scroll)
+{
+	mEventQueue_WinToEdgine_Update.AddItem(std::make_unique<MouseScrollEvent>(hwnd, scroll));
+}
 
 
-// ----------------------------------------------------------------------------------------------------
+void Engine::OnMouseMove(HWND hwnd, long x, long y)
+{
+	//Log::Info("MouseMove : (%ld, %ld)", x, y);
+	mEventQueue_WinToEdgine_Update.AddItem(std::make_unique<MouseMoveEvent>(hwnd, x, y));
+}
+
+
+void Engine::OnMouseInput(HWND hwnd, LPARAM lParam)
+{
+	MouseInputEventData data = {};
+	const bool bMouseInputEvent = Input::ReadRawInput_Mouse(lParam, &data);
+
+	if (bMouseInputEvent)
+	{
+		mEventQueue_WinToEdgine_Update.AddItem(std::make_shared<MouseInputEvent>(data, hwnd));
+	}
+}
+
+
+
+
+
+
+// ===================================================================================================================================
+// MISC
+// ===================================================================================================================================
+
 static void LogWndMsg(UINT uMsg, HWND hwnd)
 {
 #if LOG_WINDOW_MESSAGE_EVENTS

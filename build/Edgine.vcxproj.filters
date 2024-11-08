@@ -28,10 +28,16 @@
     <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Engine_WindowEvents.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Engine_EventHandlers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Events.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Mesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Math.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="D:\Dev\Local\EdgeEngine\Source\Application\Geometry.cpp">
@@ -109,6 +115,9 @@
       <Filter>Shaders</Filter>
     </Text>
     <Text Include="D:\Dev\Local\EdgeEngine\Source\Shaders\hello-cube.hlsl">
+      <Filter>Shaders</Filter>
+    </Text>
+    <Text Include="D:\Dev\Local\EdgeEngine\Source\Shaders\hello-file.hlsl">
       <Filter>Shaders</Filter>
     </Text>
     <Text Include="D:\Dev\Local\EdgeEngine\Source\Shaders\FullscreenTriangle.hlsl">
