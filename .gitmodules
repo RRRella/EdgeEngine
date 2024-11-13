@@ -1,7 +1,0 @@
-[submodule "Libs/D3D12MA"]
-	path = Libs/D3D12MA
-	url = https://github.com/RRRella/D3D12MemoryAllocator.git
-
-[submodule "Libs/Imgui"]
-	path = Libs/Imgui
-	url = https://github.com/RRRella/imgui.git
