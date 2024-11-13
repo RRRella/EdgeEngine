@@ -1,0 +1,9 @@
+[submodule "Libs/tinyobjloader"]
+	path = Libs/tinyobjloader
+	url = https://github.com/RRRella/tinyobjloader
+[submodule "Libs/imgui"]
+	path = Libs/imgui
+	url = https://github.com/RRRella/imgui
+[submodule "Libs/D3D12MemoryAllocator"]
+	path = Libs/D3D12MemoryAllocator
+	url = https://github.com/RRRella/D3D12MemoryAllocator
