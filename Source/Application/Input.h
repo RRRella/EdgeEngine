@@ -54,7 +54,9 @@ public:
 	bool IsAnyMouseDown() const;
 
 	void PostUpdate();
-	inline const std::array<float, 2>& GetMouseDelta() const { return mMouseDelta; }
+    const std::array<float, 2>& GetMouseDelta() const { return mMouseDelta; }
+
+	short GetMouseScroll() const { return mMouseScroll; }
 
 	private: // On/Off state is represented as char (8-bit) instead of bool (32-bit)
 	// state

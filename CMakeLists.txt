@@ -70,6 +70,7 @@ set (SourceEdgine
 add_subdirectory(Source/Utils)
 add_subdirectory(Libs/D3D12MemoryAllocator)
 add_subdirectory(Libs/imgui)
+add_subdirectory(Libs/tinyobjloader)
 add_subdirectory(Source/Renderer)
 
 source_group("Config"   FILES ${Config})
@@ -100,4 +101,4 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${Includes})
 
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Renderer Utils imgui)
+target_link_libraries(${PROJECT_NAME} PRIVATE Renderer Utils imgui tinyobjloader)

@@ -3,7 +3,8 @@
 #include "../Utils/Source/Utils.h"
 #include <algorithm>
 #include <cassert>
-#define VERBOSE_LOGGING 0
+
+#define VERBOSE_LOGGING 1
 #define NOMINMAX
 // keyboard mapping for windows keycodes.
 // use case: this->IsKeyDown("F4")
@@ -217,7 +218,7 @@ void Input::PostUpdate()
 	// Reset Mouse Data
 	mMouseDelta[0] = mMouseDelta[1] = 0;
 	mMouseScroll = 0;
-	Log::Info("Input::PostUpdate() : scroll=%d", mMouseScroll);
+	//Log::Info("Input::PostUpdate() : scroll=%d", mMouseScroll);
 }
 
 void Input::UpdateKeyDown(KeyDownEventData data)
@@ -301,12 +302,18 @@ bool Input::IsKeyDown(KeyCode key) const
 }
 bool Input::IsKeyUp(KeyCode key) const
 {
-	return (!IsKeyDown(key) && mKeysPrevious.at(key)) && !mbIgnoreInput;
+	if (mKeysPrevious.find(key) != mKeysPrevious.end())
+		return (!IsKeyDown(key) && mKeysPrevious.at(key)) && !mbIgnoreInput;
+	else
+		return false;
 }
 
 bool Input::IsKeyTriggered(KeyCode key) const
 {
-	return IsKeyDown(key) && !mKeysPrevious.at(key) && !mbIgnoreInput;
+	if (mKeysPrevious.find(key) != mKeysPrevious.end())
+		return IsKeyDown(key) && !mKeysPrevious.at(key) && !mbIgnoreInput;
+	else
+		return false;
 }
 
 int Input::MouseDeltaX() const { return !mbIgnoreInput ? (int)mMouseDelta[0] : 0; }
@@ -341,7 +348,7 @@ bool Input::IsMouseScrollUp() const
 }
 bool Input::IsMouseScrollDown() const
 {
-	Log::Info("Input::IsMouseScrollDown() : scroll=%d", mMouseScroll);
+	//Log::Info("Input::IsMouseScrollDown() : scroll=%d", mMouseScroll);
 	return mMouseScroll < 0 && !mbIgnoreInput;
 }
 bool Input::IsAnyMouseDown() const

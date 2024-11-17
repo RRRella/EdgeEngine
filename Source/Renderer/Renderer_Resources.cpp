@@ -30,10 +30,24 @@ static BufferID  LAST_USED_VBV_ID = 0;
 static BufferID  LAST_USED_IBV_ID = 0;
 static BufferID  LAST_USED_CBV_ID = 0;
 
-
 //
 // PUBLIC
 //
+
+
+void Renderer::UnregisterIBID(BufferID ibID)
+{
+	std::lock_guard lock(mFreeVBQueueMtx);
+
+	mFreeIBQueue.push(ibID);
+}
+
+void Renderer::UnregisterVBID(BufferID vbID)
+{
+	std::lock_guard lock(mFreeIBQueueMtx);
+
+	mFreeVBQueue.push(vbID);
+}
 
 BufferID Renderer::CreateBuffer(const FBufferDesc& desc)
 {
@@ -167,6 +181,19 @@ BufferID Renderer::CreateVertexBuffer(const FBufferDesc& desc)
 	bool bSuccess = mStaticHeap_VertexBuffer.AllocVertexBuffer(desc.NumElements, desc.Stride, desc.pData, &vbv);
 	if (bSuccess)
 	{
+		if (!mFreeVBQueue.empty())
+		{
+			std::lock_guard lock(mFreeVBQueueMtx);
+
+			Id = mFreeVBQueue.front();
+
+			mVBVs[Id] = vbv;
+
+			mFreeVBQueue.pop();
+
+			return Id;
+		}
+
 		Id = LAST_USED_VBV_ID++;
 		mVBVs[Id] = vbv;
 	}
@@ -185,6 +212,19 @@ BufferID Renderer::CreateIndexBuffer(const FBufferDesc& desc)
 	bool bSuccess = mStaticHeap_IndexBuffer.AllocIndexBuffer(desc.NumElements, desc.Stride, desc.pData, &ibv);
 	if (bSuccess)
 	{
+		if (!mFreeIBQueue.empty())
+		{
+			std::lock_guard lock(mFreeIBQueueMtx);
+
+			Id = mFreeIBQueue.front();
+
+			mIBVs[Id] = ibv;
+
+			mFreeIBQueue.pop();
+
+			return Id;
+		}
+
 		Id = LAST_USED_IBV_ID++;
 		mIBVs[Id] = ibv;
 	}
@@ -205,12 +245,18 @@ BufferID Renderer::CreateConstantBuffer(const FBufferDesc& desc)
 const VBV& Renderer::GetVertexBufferView(BufferID Id) const
 {
 	//assert(Id < mVBVs.size() && Id != INVALID_ID);
+	if (Id == -1)
+		return D3D12_VERTEX_BUFFER_VIEW{};
+
 	return mVBVs.at(Id);
 }
 
 const IBV& Renderer::GetIndexBufferView(BufferID Id) const
 {
 	//assert(Id < mIBVs.size() && Id != INVALID_ID);
+	if (Id == -1)
+		return D3D12_INDEX_BUFFER_VIEW{};
+
 	return mIBVs.at(Id);
 }
 const CBV_SRV_UAV& Renderer::GetShaderResourceView(SRV_ID Id) const

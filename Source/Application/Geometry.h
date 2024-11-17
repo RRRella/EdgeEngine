@@ -6,6 +6,8 @@
 #include <DirectXMath.h>
 using namespace DirectX;
 
+#include "tiny_obj_loader.h"
+
 #include <type_traits>
 
 namespace std
@@ -344,168 +346,85 @@ namespace GeometryGenerator
 	template<>
 	inline bool ParseObjFile<FVertexWithNormal, unsigned int>(const std::string& path , GeometryData<FVertexWithNormal, unsigned int>& geo)
 	{
-		std::unordered_map<FVertexWithNormal, unsigned int> indexMap;
-	
-		struct VertexIndices
+		tinyobj::ObjReaderConfig reader_config;
+
+		tinyobj::ObjReader reader;
+
+		if (!reader.ParseFromFile(path, reader_config))
 		{
-			WORD posIndex;
-			WORD texIndex;
-			WORD norIndex;
-		};
-	
-		std::ifstream fileStream(path);
-		if (!fileStream)
-		{
-			Log::Error("Failed to open file path : %s");
+			if (!reader.Error().empty())
+				Log::Error(reader.Error());
 			return false;
 		}
-			 
-		std::string line;
-		std::istringstream ss;
-		std::vector<XMFLOAT3> positions = {  };
-		std::vector<XMFLOAT3> normals = {  };
-		std::vector<XMFLOAT2> texCoords = {  };
-		std::vector<std::vector<VertexIndices>> meshPolygons;
-	
-	
-		while (std::getline(fileStream, line))
+
+		if (!reader.Warning().empty())
+			Log::Warning(reader.Warning());
+
+		auto& attrib = reader.GetAttrib();
+		auto& shapes = reader.GetShapes();
+		auto& materials = reader.GetMaterials();
+
+		geo.Vertices.reserve(attrib.vertices.size());
+
+		// Loop over shapes
+		for (size_t s = 0; s < shapes.size(); s++) 
 		{
-			if (line._Starts_with("v "))
-			{
-				float x, y, z;
-	
-				ss.clear();
-				ss.str(line);
-				ss.ignore(2);
-				ss >> x >> y >> z;
-	
-				positions.emplace_back(XMFLOAT3{ x,y,z });
-				continue;
-			}
-			else if (line._Starts_with("vt"))
-			{
-				float x, y;
-	
-				ss.clear();
-				ss.str(line);
-				ss.ignore(2);
-				ss >> x >> y;
-	
-				y = y - 2 * (y - 0.5f);
-	
-				texCoords.emplace_back(XMFLOAT2{ x,y });
-				continue;
-			}
-			else if (line._Starts_with("vn"))
-			{
-				float x, y, z;
-	
-				ss.clear();
-				ss.str(line);
-				ss.ignore(2);
-				ss >> x >> y >> z;
-	
-				normals.emplace_back(XMFLOAT3{ x,y,z });
-				continue;
-			}
-			else if (line._Starts_with("f "))
-			{
-				ss.clear();
-				ss.str(line);
-				ss.ignore(1);
-	
-				meshPolygons.emplace_back(std::vector<VertexIndices>{});
-	
-				while (static_cast<size_t>(ss.tellg()) <= line.size())
+			// Loop over faces(polygon)
+			size_t index_offset = 0;
+			for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+				size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
+
+				std::vector<unsigned int> faceIDX;
+
+				// Loop over vertices in the face.
+				for (size_t v = 0; v < fv; v++) 
 				{
-					VertexIndices indices;
-	
-					if (ss.peek() == '/')
+					// access to vertex
+					tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+
+					tinyobj::real_t vx = attrib.vertices[3 * size_t(idx.vertex_index) + 0];
+					tinyobj::real_t vy = attrib.vertices[3 * size_t(idx.vertex_index) + 1];
+					tinyobj::real_t vz = attrib.vertices[3 * size_t(idx.vertex_index) + 2];
+
+					tinyobj::real_t nx = 0;
+					tinyobj::real_t ny = 0;
+					tinyobj::real_t nz = 0;
+
+					tinyobj::real_t tx = -1;
+					tinyobj::real_t ty = -1;
+
+					// Check if `normal_index` is zero or positive. negative = no normal data
+					if (idx.normal_index >= 0)
 					{
-						indices.posIndex = 0;
+						nx = attrib.normals[3 * size_t(idx.normal_index) + 0];
+						ny = attrib.normals[3 * size_t(idx.normal_index) + 1];
+						nz = attrib.normals[3 * size_t(idx.normal_index) + 2];
 					}
-					else
+
+					// Check if `texcoord_index` is zero or positive. negative = no texcoord data
+					if (idx.texcoord_index >= 0) 
 					{
-						ss >> indices.posIndex;
-						indices.posIndex -= 1;
+						tx = attrib.texcoords[2 * size_t(idx.texcoord_index) + 0];
+						ty = attrib.texcoords[2 * size_t(idx.texcoord_index) + 1];
+
+						ty = 0.5f - (ty - 0.5f);
 					}
-					if (ss.peek() == '/')
-					{
-						ss.ignore(1);
-						if (ss.peek() == '/')
-						{
-							ss.ignore(1);
-							indices.texIndex = 0;
-							ss >> indices.norIndex;
-							indices.norIndex -= 1;
-							meshPolygons.back().emplace_back(indices);
-							continue;
-						}
-						ss >> indices.texIndex;
-						indices.texIndex -= 1;
-					}
-					else
-					{
-						indices.texIndex = 0;
-						indices.norIndex = 0;
-						meshPolygons.back().emplace_back(indices);
-						continue;
-					}
-					if (ss.peek() == '/')
-					{
-						ss.ignore(1);
-						ss >> indices.norIndex;
-						indices.norIndex -= 1;
-						meshPolygons.back().emplace_back(indices);
-					}
-					else
-					{
-						indices.norIndex = 0;
-						meshPolygons.back().emplace_back(indices);
-					}
-					ss >> std::ws;
-				}
-	
-			}
-		}
-	
-		//for now we preallocate our vertices with size of our positions
-		//which at leats is at that size but can be larger
-		//I don't any other way to estimate it's final size
-		geo.Vertices.reserve(positions.size());
-		indexMap.reserve(geo.Vertices.size());
-		indexMap.max_load_factor(2.0f);
-	
-		for (auto& polygon : meshPolygons)
-		{
-			std::vector<unsigned int> faceIDX;
-			faceIDX.reserve(polygon.size());
-	
-			for (auto& vertexIDX : polygon)
-			{
-				auto vertex = FVertexWithNormal{ {positions[vertexIDX.posIndex].x , positions[vertexIDX.posIndex].y ,positions[vertexIDX.posIndex].z},
-												 {normals[vertexIDX.norIndex].x   , normals[vertexIDX.norIndex].y   , normals[vertexIDX.norIndex].z },
-												 {texCoords[vertexIDX.texIndex].x , texCoords[vertexIDX.texIndex].y} };
-	
-				if (indexMap.find(vertex) == indexMap.end())
-				{
-					geo.Vertices.emplace_back(vertex);
-	
-					indexMap[vertex] = geo.Vertices.size() - 1;
-	
+
+					assert(tx >= 0);
+
+					geo.Vertices.emplace_back(FVertexWithNormal{{vx , vy , vz}, {nx, ny, nz} ,{tx,ty}});
+
 					faceIDX.emplace_back(geo.Vertices.size() - 1);
 				}
-				else
+
+				for (int i = 2; i < faceIDX.size(); i++)
 				{
-					faceIDX.emplace_back(indexMap[vertex]);
+					geo.Indices.emplace_back(faceIDX[0]);
+					geo.Indices.emplace_back(faceIDX[i - 1]);
+					geo.Indices.emplace_back(faceIDX[i]);
 				}
-			}
-	
-			for (int i = 2; i < faceIDX.size(); i++)
-			{
-				geo.Indices.emplace_back(faceIDX[0]);
-				geo.Indices.emplace_back(faceIDX[i - 1]);
-				geo.Indices.emplace_back(faceIDX[i]);
+
+				index_offset += fv;
 			}
 		}
 

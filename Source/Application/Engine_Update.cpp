@@ -224,42 +224,36 @@ void Engine::UpdateThread_UpdateScene(const float dt)
 	const Input& input            = mInputStates.at(hwnd);
 	
 	// handle input
-	if (input.IsKeyTriggered(KeyCode::R)) FrameData.SceneCamera.InitializeCamera(GenerateCameraInitializationParameters(mpWinMain));
+	if(!FrameData.SceneCamera.mIsInitialized)
+		FrameData.SceneCamera.InitializeCamera(GenerateCameraInitializationParameters(mpWinMain));
 
 	constexpr float CAMERA_MOVEMENT_SPEED_MULTIPLER = 0.75f;
-	constexpr float CAMERA_MOVEMENT_SPEED_SHIFT_MULTIPLER = 2.0f;
 	XMVECTOR LocalSpaceTranslation = XMVectorSet(0, 0, 0, 0);
-	if (input.IsKeyDown(KeyCode::A))		LocalSpaceTranslation += XMLoadFloat3(&LeftVector);
-	if (input.IsKeyDown(KeyCode::D))		LocalSpaceTranslation += XMLoadFloat3(&RightVector);
-	if (input.IsKeyDown(KeyCode::W))		LocalSpaceTranslation += XMLoadFloat3(&ForwardVector);
-	if (input.IsKeyDown(KeyCode::S))		LocalSpaceTranslation += XMLoadFloat3(&BackVector);
-	if (input.IsKeyDown(KeyCode::E))		LocalSpaceTranslation += XMLoadFloat3(&UpVector);
-	if (input.IsKeyDown(KeyCode::Q))		LocalSpaceTranslation += XMLoadFloat3(&DownVector);
-	LocalSpaceTranslation *= CAMERA_MOVEMENT_SPEED_MULTIPLER;
 
-	constexpr float MOUSE_BUTTON_ROTATION_SPEED_MULTIPLIER = 1.0f;
-	if (input.IsMouseDown(MOUSE_BUTTON_LEFT))   FrameData.TFCube.RotateAroundAxisRadians(ZAxis, dt * PI * MOUSE_BUTTON_ROTATION_SPEED_MULTIPLIER);
-	if (input.IsMouseDown(MOUSE_BUTTON_RIGHT))  FrameData.TFCube.RotateAroundAxisRadians(YAxis, dt * PI * MOUSE_BUTTON_ROTATION_SPEED_MULTIPLIER);
-	if (input.IsMouseDown(MOUSE_BUTTON_MIDDLE)) FrameData.TFCube.RotateAroundAxisRadians(XAxis, dt * PI * MOUSE_BUTTON_ROTATION_SPEED_MULTIPLIER);
+	if (input.IsKeyDown(KeyCode::LeftAlt))
+	{
+		if (input.IsMouseDown(MOUSE_BUTTON_RIGHT))
+		{
+			LocalSpaceTranslation += XMVECTOR{-1.0f,0.0f,0.0f} * input.GetMouseDelta()[0] * 0.1f;
+			LocalSpaceTranslation += XMVECTOR{ 0.0f,1.0f,0.0f} * input.GetMouseDelta()[1] * 0.1f;
 
-	constexpr float DOUBLE_CLICK_MULTIPLIER = 4.0f;
-	if (input.IsMouseDoubleClick(MOUSE_BUTTON_LEFT))   FrameData.TFCube.RotateAroundAxisRadians(ZAxis, dt * PI * DOUBLE_CLICK_MULTIPLIER);
-	if (input.IsMouseDoubleClick(MOUSE_BUTTON_RIGHT))  FrameData.TFCube.RotateAroundAxisRadians(YAxis, dt * PI * DOUBLE_CLICK_MULTIPLIER);
-	if (input.IsMouseDoubleClick(MOUSE_BUTTON_MIDDLE)) FrameData.TFCube.RotateAroundAxisRadians(XAxis, dt * PI * DOUBLE_CLICK_MULTIPLIER);
+			LocalSpaceTranslation *= CAMERA_MOVEMENT_SPEED_MULTIPLER;
+		}
+		if (input.IsMouseDown(MOUSE_BUTTON_LEFT))
+		{
+			FrameData.SceneCamera.Rotate(input.GetMouseDelta()[0], input.GetMouseDelta()[1], dt);
+		}
+		if (input.IsMouseScrollDown() || input.IsMouseScrollUp())
+		{
+			LocalSpaceTranslation += XMVECTOR{ 0.0f,0.0f,1.0f } * input.GetMouseScroll() * 0.5f;
+		}
+	}
 	
-	constexpr float SCROLL_SCALE_DELTA = 1.1f;
-	const float CubeScale = FrameData.TFCube._scale.x;
-	if (input.IsMouseScrollUp()  ) FrameData.TFCube.SetUniformScale(CubeScale * SCROLL_SCALE_DELTA);
-	if (input.IsMouseScrollDown()) FrameData.TFCube.SetUniformScale(std::max(0.5f, CubeScale / SCROLL_SCALE_DELTA));
-
 	// update camera
 	CameraInput camInput(LocalSpaceTranslation);
 	camInput.DeltaMouseXY = input.GetMouseDelta();
+
 	FrameData.SceneCamera.Update(dt, camInput);
-	
-	// update scene data
-	FrameData.TFCube.RotateAroundLocalYAxisDegrees(dt * 0.2f * RAD2DEG);
-	
 }
 
 void Engine::UpdateThread_PostUpdate()

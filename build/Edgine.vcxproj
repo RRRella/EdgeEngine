@@ -90,7 +90,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;D:\Dev\Local\EdgeEngine\Libs\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -111,10 +111,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;D:\Dev\Local\EdgeEngine\Libs\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;D:\Dev\Local\EdgeEngine\Libs\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -161,7 +161,7 @@ exit /b %1
 if %errorlevel% neq 0 goto :VCEnd</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalDependencies>Bin\DEBUG\Renderer.lib;Lib\DEBUG\Utils.lib;Libs\imgui\Debug\imgui.lib;Libs\D3D12MemoryAllocator\src\Debug\D3D12MAd.lib;d3d12.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>Bin\DEBUG\Renderer.lib;Lib\DEBUG\Utils.lib;Libs\imgui\Debug\imgui.lib;Libs\tinyobjloader\Debug\tinyobjloader.lib;Libs\D3D12MemoryAllocator\src\Debug\D3D12MAd.lib;d3d12.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -176,7 +176,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;D:\Dev\Local\EdgeEngine\Libs\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -198,10 +198,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;D:\Dev\Local\EdgeEngine\Libs\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;D:\Dev\Local\EdgeEngine\Libs\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -248,7 +248,7 @@ exit /b %1
 if %errorlevel% neq 0 goto :VCEnd</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalDependencies>Bin\RELEASE\Renderer.lib;Lib\RELEASE\Utils.lib;Libs\imgui\Release\imgui.lib;Libs\D3D12MemoryAllocator\src\Release\D3D12MA.lib;d3d12.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>Bin\RELEASE\Renderer.lib;Lib\RELEASE\Utils.lib;Libs\imgui\Release\imgui.lib;Libs\tinyobjloader\Release\tinyobjloader.lib;Libs\D3D12MemoryAllocator\src\Release\D3D12MA.lib;d3d12.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -263,7 +263,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;D:\Dev\Local\EdgeEngine\Libs\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -285,10 +285,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;D:\Dev\Local\EdgeEngine\Libs\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;D:\Dev\Local\EdgeEngine\Libs\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -335,7 +335,7 @@ exit /b %1
 if %errorlevel% neq 0 goto :VCEnd</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalDependencies>Bin\MINSIZEREL\Renderer.lib;Lib\MINSIZEREL\Utils.lib;Libs\imgui\MinSizeRel\imgui.lib;Libs\D3D12MemoryAllocator\src\MinSizeRel\D3D12MAs.lib;d3d12.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>Bin\MINSIZEREL\Renderer.lib;Lib\MINSIZEREL\Utils.lib;Libs\imgui\MinSizeRel\imgui.lib;Libs\tinyobjloader\MinSizeRel\tinyobjloader.lib;Libs\D3D12MemoryAllocator\src\MinSizeRel\D3D12MAs.lib;d3d12.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -350,7 +350,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;D:\Dev\Local\EdgeEngine\Libs\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -371,10 +371,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;D:\Dev\Local\EdgeEngine\Libs\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Dev\Local\EdgeEngine;D:\Dev\Local\EdgeEngine\Libs\imgui;D:\Dev\Local\EdgeEngine\Libs\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -421,7 +421,7 @@ exit /b %1
 if %errorlevel% neq 0 goto :VCEnd</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalDependencies>Bin\RELWITHDEBINFO\Renderer.lib;Lib\RELWITHDEBINFO\Utils.lib;Libs\imgui\RelWithDebInfo\imgui.lib;Libs\D3D12MemoryAllocator\src\RelWithDebInfo\D3D12MArd.lib;d3d12.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>Bin\RELWITHDEBINFO\Renderer.lib;Lib\RELWITHDEBINFO\Utils.lib;Libs\imgui\RelWithDebInfo\imgui.lib;Libs\tinyobjloader\RelWithDebInfo\tinyobjloader.lib;Libs\D3D12MemoryAllocator\src\RelWithDebInfo\D3D12MArd.lib;d3d12.lib;dxgi.lib;dxguid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -560,6 +560,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ProjectReference Include="D:\Dev\Local\EdgeEngine\build\Libs\imgui\imgui.vcxproj">
       <Project>{AAA732D7-3F74-3B85-A384-4CB0CEAF16A3}</Project>
       <Name>imgui</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Dev\Local\EdgeEngine\build\Libs\tinyobjloader\tinyobjloader.vcxproj">
+      <Project>{E0ADCB93-EEC5-34D2-A370-B0A72BB30868}</Project>
+      <Name>tinyobjloader</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -77,6 +77,7 @@ public:
 	// Main Thread
 	// ---------------------------------------------------------
 	bool Initialize(const FStartupParameters& Params);
+
 	void Exit();
 
 	// Window event callbacks for the main Window
@@ -155,8 +156,11 @@ public:
 	inline const std::string&  GetWindowName(const std::unique_ptr<Window>& pWin) const { return GetWindowName(pWin->GetHWND()); }
 	inline const std::string&  GetWindowName(const Window* pWin) const { return GetWindowName(pWin->GetHWND()); }
 private:
+	//currently getting used for opening a mesh only, not a clean code
+	std::string OpenFile() const;
+
 	//-------------------------------------------------------------------------------------------------
-	using BuiltinMeshArray_t = std::array<Mesh, EBuiltInMeshes::NUM_BUILTIN_MESHES>;
+	using BuiltinMeshArray_t = std::array<std::shared_ptr<Mesh>, EBuiltInMeshes::NUM_BUILTIN_MESHES>;
 	using BuiltinMeshNameArray_t = std::array<std::string, EBuiltInMeshes::NUM_BUILTIN_MESHES>;
 	//-------------------------------------------------------------------------------------------------
 	using EventPtr_t = std::shared_ptr<IEvent>;

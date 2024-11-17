@@ -7,7 +7,7 @@
 #include "ResourceViews.h"
 #include "Buffer.h"
 #include "Texture.h"
-
+#include <queue>
 #include "../Application/Platform.h"
 #include "../Application/Settings.h"
 #include "../Application/Types.h"
@@ -119,6 +119,9 @@ public:
 	void                         DestroySRV(SRV_ID srvID);
 	void                         DestroyDSV(DSV_ID dsvID);
 
+	void						 UnregisterVBID(BufferID vbID);
+	void						 UnregisterIBID(BufferID ibID);
+
 	// Getters: PSO, RootSignature, Heap
 	inline ID3D12PipelineState*  GetPSO(EBuiltinPSOs pso) const { return mpBuiltinPSOs[pso]; }
 	inline ID3D12RootSignature*  GetRootSignature(int idx) const { return mpBuiltinRootSignatures[idx]; }
@@ -142,7 +145,8 @@ public:
 	inline const RTV&            GetRTV(RTV_ID   Id) const { return GetRenderTargetView(Id);    }
 	inline const DSV&            GetDSV(DSV_ID   Id) const { return GetDepthStencilView(Id);    }
 
-
+	void LoadDefaultResources();
+	void LoadPSOs();
 private:
 	using PSOArray_t           = std::array<ID3D12PipelineState*, EBuiltinPSOs::NUM_BUILTIN_PSOs>;
 
@@ -198,14 +202,20 @@ private:
 	// bookkeeping
 	std::unordered_map<TextureID, std::string>     mLookup_TextureDiskLocations;
 
+	std::mutex   mFreeVBQueueMtx;
+	std::queue<BufferID> mFreeVBQueue;
+
+	std::mutex   mFreeIBQueueMtx;
+	std::queue<BufferID> mFreeIBQueue;
 
 
+	
 private:
 	void InitializeD3D12MA();
 	void InitializeHeaps();
 
-	void LoadPSOs();
-	void LoadDefaultResources();
+	
+	
 
 	BufferID CreateVertexBuffer(const FBufferDesc& desc);
 	BufferID CreateIndexBuffer(const FBufferDesc& desc);

@@ -38,6 +38,33 @@ bool Engine::Initialize(const FStartupParameters& Params)
 	return true;
 }
 
+std::string Engine::OpenFile() const
+{
+	OPENFILENAMEA ofn;
+	char szFile[256];
+	szFile[0] = '\0';
+	char currentDir[256];
+	currentDir[0] = '\0';
+	const char* filter = "All(*.*)\0*.*\0Text(*.txt)\0*.txt\0OBJ(*.obj)\0*.obj";
+
+	std::memset(&ofn, 0, sizeof(ofn));
+
+	ofn.lStructSize = sizeof(OPENFILENAMEA);
+	ofn.hwndOwner = mpWinMain->GetHWND();
+	ofn.lpstrFilter = filter;
+	ofn.lpstrFile = szFile;
+	if (GetCurrentDirectoryA(256, currentDir))
+		ofn.lpstrInitialDir = currentDir;
+	ofn.nFilterIndex = 1;
+	ofn.nMaxFile = 256 * sizeof(char);
+	ofn.lpstrFileTitle = NULL;
+	ofn.nMaxFileTitle = 0;
+	ofn.lpstrInitialDir = NULL;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+	if (GetOpenFileNameA(&ofn))
+		return ofn.lpstrFile;
+}
 
 void Engine::Exit()
 {

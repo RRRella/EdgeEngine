@@ -3,6 +3,10 @@
 
 #include <Windowsx.h>
 
+#include "Libs/imgui/backends/imgui_impl_win32.h"
+
+IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 constexpr int MIN_WINDOW_SIZE = 128; // make sure window cannot be resized smaller than 128x128
 
 #define LOG_WINDOW_MESSAGE_EVENTS 0
@@ -16,6 +20,9 @@ static void LogWndMsg(UINT uMsg, HWND hwnd);
 // ===================================================================================================================================
 LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	if (ImGui_ImplWin32_WndProcHandler(hwnd, uMsg, wParam, lParam))
+		return true;
+
 	LogWndMsg(uMsg, hwnd);
 	IWindow* pWindow = reinterpret_cast<IWindow*> (::GetWindowLongPtr(hwnd, GWLP_USERDATA));
 	if (!pWindow)

@@ -194,6 +194,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <Project>{AAA732D7-3F74-3B85-A384-4CB0CEAF16A3}</Project>
       <Name>imgui</Name>
     </ProjectReference>
+    <ProjectReference Include="D:\Dev\Local\EdgeEngine\build\Libs\tinyobjloader\tinyobjloader.vcxproj">
+      <Project>{E0ADCB93-EEC5-34D2-A370-B0A72BB30868}</Project>
+      <Name>tinyobjloader</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

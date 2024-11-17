@@ -1,5 +1,7 @@
 #include "Camera.h"
 #include "Math.h"
+#include "../Utils/Source/Log.h"
+
 // TODO: remove duplicate definition
 #define DEG2RAD (DirectX::XM_PI / 180.0f)
 #define RAD2DEG (180.0f / DirectX::XM_PI)
@@ -44,6 +46,8 @@ void Camera::InitializeCamera(const CameraData& data)
 	SetPosition(data.x, data.y, data.z);
 	mYaw = mPitch = 0;
 	Rotate(data.yaw * DEG2RAD, data.pitch * DEG2RAD, 1.0f);
+
+	mIsInitialized = true;
 }
 
 void Camera::SetProjectionMatrix(const ProjectionMatrixParameters& params)
@@ -57,7 +61,6 @@ void Camera::SetProjectionMatrix(const ProjectionMatrixParameters& params)
 }
 void Camera::Update(const float dt, const CameraInput& input)
 {
-	Rotate(dt, input);
 	Move(dt, input);
 	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	XMVECTOR lookAt = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
@@ -69,6 +72,7 @@ void Camera::Update(const float dt, const CameraInput& input)
 	//translate the lookat
 	lookAt = pos + lookAt;
 	//create view matrix
+
 	XMStoreFloat4x4(&mMatView, XMMatrixLookAtLH(pos, lookAt, up));
 	// move based on velocity
 	XMVECTOR P = XMLoadFloat3(&mPosition);
@@ -95,9 +99,21 @@ XMMATRIX Camera::GetProjectionMatrix() const
 {
 	return  XMLoadFloat4x4(&mMatProj);
 }
-XMMATRIX Camera::GetRotationMatrix() const
+XMMATRIX Camera::GetRotationMatrix()
 {
-	return XMMatrixRotationRollPitchYaw(mPitch, mYaw, 0.0f);
+	return XMMatrixRotationQuaternion(mQuat);
+}
+XMVECTOR Camera::GetRight() const
+{
+	return XMVector3Rotate({ 1.0f,0.0f,0.0f }, mQuat);
+}
+XMVECTOR Camera::GetUp() const
+{
+	return XMVector3Rotate({ 0.0f,1.0f,0.0f }, mQuat);
+}
+XMVECTOR Camera::GetForward() const
+{
+	return XMVector3Rotate({ 0.0f,0.0f,1.0f }, mQuat);
 }
 void Camera::SetPosition(float x, float y, float z)
 {
@@ -105,10 +121,18 @@ void Camera::SetPosition(float x, float y, float z)
 }
 void Camera::Rotate(float yaw, float pitch, const float dt)
 {
-	mYaw   += yaw   * dt;
-	mPitch += pitch * dt;
-}
+	const float delta = AngularSpeedDeg * DEG2RAD * dt;
 
+	XMVECTOR pitchQuat = XMQuaternionRotationAxis({ 1.0f, 0.0f, 0.0f }, pitch * delta);
+	XMVECTOR yawQuat = XMQuaternionRotationAxis({ 0.0f, 1.0f, 0.0f }, yaw * delta);
+	XMVECTOR orientation = XMQuaternionMultiply(pitchQuat ,yawQuat);
+
+	mPitch += pitch * delta;
+	mYaw += yaw * delta;
+
+	mQuat = XMQuaternionRotationRollPitchYawFromVector({ mPitch, mYaw, 0.0f });
+	mQuat = XMQuaternionNormalize(mQuat);
+}
 void Camera::Reset() {}
 void Camera::Rotate(const float dt, const CameraInput& input)
 {

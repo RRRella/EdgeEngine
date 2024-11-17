@@ -52,7 +52,10 @@ public:
 
 	void Move(const float dt, const CameraInput& input);
 	void Rotate(const float dt, const CameraInput& input);
-	DirectX::XMMATRIX GetRotationMatrix() const;
+	DirectX::XMMATRIX GetRotationMatrix();
+	DirectX::XMVECTOR GetRight() const;
+	DirectX::XMVECTOR GetUp() const;
+	DirectX::XMVECTOR GetForward() const;
 
 	DirectX::XMFLOAT3 mPosition;
 	DirectX::XMFLOAT3 mVelocity;
@@ -68,4 +71,11 @@ public:
 
 	DirectX::XMFLOAT4X4 mMatView;
 	DirectX::XMFLOAT4X4 mMatProj;
+
+	DirectX::XMVECTOR mQuat = DirectX::XMVECTOR{0.0f,0.0f,0.0f,1.0f};
+	
+	bool mIsInitialized = false;
+
+private:
+	float WrapAngle(float angle, float minAngle, float maxAngle);
 };

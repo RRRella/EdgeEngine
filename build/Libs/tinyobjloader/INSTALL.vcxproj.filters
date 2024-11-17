@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\Dev\Local\EdgeEngine\build\CMakeFiles\b44e57f6291e437418e3c1570bdd3366\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{33FED094-7F1D-3E77-9071-376559457C1F}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

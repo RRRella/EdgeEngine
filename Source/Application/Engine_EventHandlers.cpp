@@ -105,8 +105,8 @@ void Engine::SetMouseCaptureForWindow(HWND hwnd, bool bCaptureMouse)
 void Engine::UpdateThread_HandleEvents()
 {
 	// Swap event recording buffers so we can read & process a limited number of events safely.
-	mEventQueue_WinToEdgine_Renderer.SwapBuffers();
-	std::queue<EventPtr_t>& q = mEventQueue_WinToEdgine_Renderer.GetBackContainer();
+	mEventQueue_WinToEdgine_Update.SwapBuffers();
+	std::queue<EventPtr_t>& q = mEventQueue_WinToEdgine_Update.GetBackContainer();
 
 	if (q.empty())
 		return;

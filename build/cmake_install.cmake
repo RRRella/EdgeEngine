@@ -49,6 +49,11 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
+  include("D:/Dev/Local/EdgeEngine/build/Libs/tinyobjloader/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
   include("D:/Dev/Local/EdgeEngine/build/Source/Renderer/cmake_install.cmake")
 endif()
 

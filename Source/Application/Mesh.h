@@ -62,15 +62,15 @@ public:
 	//Mesh(const Mesh&&) = delete;
 	//void operator=(const Mesh&) = delete;
 
+	~Mesh();
 
 	//
 	// Interface
 	//
 	std::pair<BufferID, BufferID> GetIABufferIDs(int lod = 0) const;
 	inline uint GetNumIndices(int lod = 0) const { return mNumIndicesPerLODLevel[lod]; }
-
-	bool LoadFromFile(const std::string& path);
 private:
+	Renderer* mRenderer;
 	std::vector<VertexIndexBufferIDPair> mLODBufferPairs;
 	std::vector<uint> mNumIndicesPerLODLevel;
 };
@@ -85,6 +85,7 @@ Mesh::Mesh(
 	const std::vector<TIndex>& indices,
 	const std::string& name
 )
+	:mRenderer(pRenderer)
 {
 	FBufferDesc bufferDesc = {};
 
@@ -97,14 +98,14 @@ Mesh::Mesh(
 	bufferDesc.Stride       = sizeof(vertices[0]);
 	bufferDesc.pData        = static_cast<const void*>(vertices.data());
 	bufferDesc.Name         = VBName;
-	BufferID vertexBufferID = pRenderer->CreateBuffer(bufferDesc);
+	BufferID vertexBufferID = mRenderer->CreateBuffer(bufferDesc);
 
 	bufferDesc.Type        = INDEX_BUFFER;
 	//bufferDesc.Usage       = GPU_READ_WRITE;
 	bufferDesc.NumElements = static_cast<unsigned>(indices.size());
 	bufferDesc.Stride      = sizeof(unsigned);
 	bufferDesc.pData       = static_cast<const void*>(indices.data());
-	BufferID indexBufferID = pRenderer->CreateBuffer(bufferDesc);
+	BufferID indexBufferID = mRenderer->CreateBuffer(bufferDesc);
 
 	mLODBufferPairs.push_back({ vertexBufferID, indexBufferID }); // LOD[0]
 	mNumIndicesPerLODLevel.push_back(bufferDesc.NumElements);

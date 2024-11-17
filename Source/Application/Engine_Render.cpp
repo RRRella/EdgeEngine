@@ -107,6 +107,7 @@ void Engine::RenderThread_Inititalize()
 	InitializeBuiltinMeshes();
 
 	// load renderer resources
+	mRenderer.LoadPSOs();
 	mRenderer.Load();
 
 	// TODO:
@@ -149,19 +150,7 @@ void Engine::InitializeBuiltinMeshes()
 	{
 		GeometryGenerator::GeometryData<FVertexWithColorAndAlpha> data = GeometryGenerator::Triangle<FVertexWithColorAndAlpha>(1.0f);
 		mBuiltinMeshNames[EBuiltInMeshes::TRIANGLE] = "Triangle";
-		mBuiltinMeshes[EBuiltInMeshes::TRIANGLE] = Mesh(&mRenderer, data.Vertices, data.Indices, mBuiltinMeshNames[EBuiltInMeshes::TRIANGLE]);
-	}
-	{
-		GeometryGenerator::GeometryData<FVertexWithColorAndAlpha> data = GeometryGenerator::Cube<FVertexWithColorAndAlpha>();
-		mBuiltinMeshNames[EBuiltInMeshes::CUBE] = "Cube";
-		mBuiltinMeshes[EBuiltInMeshes::CUBE] = Mesh(&mRenderer, data.Vertices, data.Indices, mBuiltinMeshNames[EBuiltInMeshes::CUBE]);
-	}
-	{
-		GeometryGenerator::GeometryData<FVertexWithNormal> data;
-		GeometryGenerator::LoadObjFromFile<FVertexWithNormal>("./Data/Skull.obj", data);
-
-		mBuiltinMeshNames[EBuiltInMeshes::OBJ_FILE] = "OBJ_File";
-		mBuiltinMeshes[EBuiltInMeshes::OBJ_FILE] = Mesh(&mRenderer, data.Vertices, data.Indices, mBuiltinMeshNames[EBuiltInMeshes::OBJ_FILE]);
+		mBuiltinMeshes[EBuiltInMeshes::TRIANGLE] = std::make_shared<Mesh>(&mRenderer, data.Vertices, data.Indices, mBuiltinMeshNames[EBuiltInMeshes::TRIANGLE]);
 	}
 
 	// ...
@@ -246,20 +235,26 @@ void Engine::RenderThread_DrawImguiWidgets()
 	{
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("Save File", "CTRL + S"))
-			{
-				//m_Mesh->Save(Application::GetInstance().SaveFile());
-			}
 			if (ImGui::MenuItem("Load File", "CTRL + O"))
 			{
-				//m_Mesh->Load(Application::GetInstance().OpenFile());
-				//m_Mesh->SetShadingEffect(m_ShadingEffect);
-				//m_Mesh->DrawToScene();
+				if (!mBuiltinMeshes[EBuiltInMeshes::OBJ_FILE])
+				{
+					GeometryGenerator::GeometryData<FVertexWithNormal> data;
+					GeometryGenerator::LoadObjFromFile<FVertexWithNormal>(OpenFile(), data);
+
+					mBuiltinMeshNames[EBuiltInMeshes::OBJ_FILE] = "OBJ_File";
+					mBuiltinMeshes[EBuiltInMeshes::OBJ_FILE] = std::make_shared<Mesh>(&mRenderer, data.Vertices, data.Indices, mBuiltinMeshNames[EBuiltInMeshes::OBJ_FILE]);
+
+					mRenderer.Load();
+				}
+				else
+				{
+					Log::Warning("Clear the current mesh then load another");
+				}
 			}
 			if (ImGui::MenuItem("Clear"))
 			{
-				//m_Mesh->DeleteFromScene();
-				//m_Mesh->Reset();
+				mBuiltinMeshes[EBuiltInMeshes::OBJ_FILE].reset();
 			}
 			ImGui::EndMenu();
 		}
@@ -348,7 +343,7 @@ HRESULT Engine::RenderThread_RenderMainWindow_LoadingScreen(FWindowRenderContext
 	const float           RenderResolutionX = static_cast<float>(ctx.MainRTResolutionX);
 	const float           RenderResolutionY = static_cast<float>(ctx.MainRTResolutionY);
 	D3D12_VIEWPORT        viewport          { 0.0f, 0.0f, RenderResolutionX, RenderResolutionY, 0.0f, 1.0f };
-	const auto            VBIBIDs           = mBuiltinMeshes[EBuiltInMeshes::TRIANGLE].GetIABufferIDs();
+	const auto            VBIBIDs           = mBuiltinMeshes[EBuiltInMeshes::TRIANGLE]->GetIABufferIDs();
 	const BufferID&       IB_ID             = VBIBIDs.second;
 	const IBV&            ib                = mRenderer.GetIndexBufferView(IB_ID);
 	ID3D12DescriptorHeap* ppHeaps[]         = { mRenderer.GetDescHeap(EResourceHeapType::CBV_SRV_UAV_HEAP) };
@@ -395,9 +390,9 @@ HRESULT Engine::RenderThread_RenderMainWindow_LoadingScreen(FWindowRenderContext
 HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 {
 	HRESULT hr = S_OK;
-	const int NUM_BACK_BUFFERS  = ctx.SwapChain.GetNumBackBuffers();
+	const int NUM_BACK_BUFFERS = ctx.SwapChain.GetNumBackBuffers();
 	const int BACK_BUFFER_INDEX = ctx.SwapChain.GetCurrentBackBufferIndex();
-	const int FRAME_DATA_INDEX  = mNumRenderLoopsExecuted % NUM_BACK_BUFFERS;
+	const int FRAME_DATA_INDEX = mNumRenderLoopsExecuted % NUM_BACK_BUFFERS;
 	const FFrameData& FrameData = mScene_MainWnd.mFrameData[FRAME_DATA_INDEX];
 	assert(ctx.mCommandAllocatorsGFX.size() >= NUM_BACK_BUFFERS);
 	// ----------------------------------------------------------------------------
@@ -406,7 +401,7 @@ HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 	//
 	// PRE RENDER
 	//
-	
+
 	// Dynamic constant buffer maintenance
 	ctx.mDynamicHeap_ConstantBuffer.OnBeginFrame();
 
@@ -433,7 +428,7 @@ HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 	CD3DX12_RESOURCE_BARRIER barriers[] =
 	{
 		  CD3DX12_RESOURCE_BARRIER::Transition(pSwapChainRT, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET)
-		//, CD3DX12_RESOURCE_BARRIER::Transition(
+		  //, CD3DX12_RESOURCE_BARRIER::Transition(
 	};
 	pCmd->ResourceBarrier(_countof(barriers), barriers);
 
@@ -465,47 +460,52 @@ HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 	// TBA
 
 	// Draw Object
-	const Mesh& mesh = mBuiltinMeshes[EBuiltInMeshes::OBJ_FILE];
-	const auto VBIBIDs = mesh.GetIABufferIDs();
-	const uint32 NumIndices = mesh.GetNumIndices();
-	const uint32 NumInstances = 1;
-	const BufferID& VB_ID = VBIBIDs.first;
-	const BufferID& IB_ID = VBIBIDs.second;
-	const VBV& vb = mRenderer.GetVertexBufferView(VB_ID);
-	const IBV& ib = mRenderer.GetIndexBufferView(IB_ID);
-	ID3D12DescriptorHeap* ppHeaps[] = { mRenderer.GetDescHeap(EResourceHeapType::CBV_SRV_UAV_HEAP) };
-
-	// set constant buffer data
-	using namespace DirectX;
-	const XMMATRIX mMVP
-		= FrameData.TFCube.WorldTransformationMatrix()
-		* FrameData.SceneCamera.GetViewMatrix()
-		* FrameData.SceneCamera.GetProjectionMatrix();
-	struct Consts { XMMATRIX matModelViewProj; } consts{ mMVP };
-	
-	D3D12_GPU_VIRTUAL_ADDRESS cbAddr = {};
-	void* pMem = nullptr;
-	ctx.mDynamicHeap_ConstantBuffer.AllocConstantBuffer(sizeof(Consts), &pMem, &cbAddr);
-	*((Consts*)pMem) = consts;
+	const auto mesh = mBuiltinMeshes[EBuiltInMeshes::OBJ_FILE];
 
 	pCmd->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
-	pCmd->SetPipelineState(mRenderer.GetPSO(EBuiltinPSOs::HELLO_WORLD_FILE_PSO));
-	
-	// hardcoded roog signature for now until shader reflection and rootsignature management is implemented
-	pCmd->SetGraphicsRootSignature(mRenderer.GetRootSignature(3)); 
+	if (mesh)
+	{
+		auto VBIBIDs = mesh->GetIABufferIDs();
+		uint32 NumIndices = mesh->GetNumIndices();
+		uint32 NumInstances = 1;
 
-	pCmd->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-	pCmd->SetGraphicsRootDescriptorTable(0, mRenderer.GetSRV(FrameData.SRVObjectTex).GetGPUDescHandle());
-	pCmd->SetGraphicsRootConstantBufferView(1, cbAddr);
+		const BufferID& VB_ID = VBIBIDs.first;
+		const BufferID& IB_ID = VBIBIDs.second;
+		const VBV& vb = mRenderer.GetVertexBufferView(VB_ID);
+		const IBV& ib = mRenderer.GetIndexBufferView(IB_ID);
+		ID3D12DescriptorHeap* ppHeaps[] = { mRenderer.GetDescHeap(EResourceHeapType::CBV_SRV_UAV_HEAP) };
+
+		// set constant buffer data
+		using namespace DirectX;
+		const XMMATRIX mMVP
+			= FrameData.TFCube.WorldTransformationMatrix()
+			* FrameData.SceneCamera.GetViewMatrix()
+			* FrameData.SceneCamera.GetProjectionMatrix();
+		struct Consts { XMMATRIX matModelViewProj; } consts{ mMVP };
+
+		D3D12_GPU_VIRTUAL_ADDRESS cbAddr = {};
+		void* pMem = nullptr;
+		ctx.mDynamicHeap_ConstantBuffer.AllocConstantBuffer(sizeof(Consts), &pMem, &cbAddr);
+		*((Consts*)pMem) = consts;
+
+		pCmd->SetPipelineState(mRenderer.GetPSO(EBuiltinPSOs::HELLO_WORLD_FILE_PSO));
+
+		// hardcoded roog signature for now until shader reflection and rootsignature management is implemented
+		pCmd->SetGraphicsRootSignature(mRenderer.GetRootSignature(3));
+
+		pCmd->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+		pCmd->SetGraphicsRootDescriptorTable(0, mRenderer.GetSRV(FrameData.SRVObjectTex).GetGPUDescHandle());
+		pCmd->SetGraphicsRootConstantBufferView(1, cbAddr);
 
 
-	pCmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	pCmd->IASetVertexBuffers(0, 1, &vb);
-	pCmd->IASetIndexBuffer(&ib);
+		pCmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		pCmd->IASetVertexBuffers(0, 1, &vb);
+		pCmd->IASetIndexBuffer(&ib);
 
-	pCmd->DrawIndexedInstanced(NumIndices, NumInstances, 0, 0, 0);
+		pCmd->DrawIndexedInstanced(NumIndices, NumInstances, 0, 0, 0);
 
+	}
 	//Imgui
 	ID3D12DescriptorHeap* heap = mRenderer.GetImguiHeap();
 	pCmd->SetDescriptorHeaps(1, &heap);
