@@ -12,7 +12,7 @@ public:
     void Create(ID3D12Device* pDevice, const char* pDebugName);
     void Destroy();
 
-    void Signal(ID3D12CommandQueue* pCommandQueue);
+    UINT64 Signal(ID3D12CommandQueue* pCommandQueue);
     inline UINT64 GetValue() const { return mFenceValue; }
 
     void WaitOnCPU(UINT64 olderFence);

@@ -5,8 +5,150 @@
 
 #include <cassert>
 
+void DynamicHeap::Create(ID3D12Device* device, const D3D12_HEAP_DESC& desc)
+{
+    mDesc = desc;
+    mRemSize = mDesc.SizeInBytes;
 
-size_t StaticBufferHeap::MEMORY_ALIGNMENT = 256;
+    device->CreateHeap(&mDesc, IID_PPV_ARGS(&mHeap));
+
+    mOccupied = { std::list<BufferRegion>{} };
+}
+
+void DynamicHeap::Destroy()
+{
+    if (!mResRegisterMap.empty())
+    {
+        Log::Error("Attemp on deleting a occupied D3D12 Heap");
+        assert(false);
+    }
+
+    mHeap->Release();
+}
+
+uint64_t DynamicHeap::SetResource(const size_t& offset, const size_t& size, std::list<BufferRegion>::iterator regionIt, ID3D12Resource* resource, uint64_t index)
+{
+    BufferRegion bufferCoordinate = BufferRegion{ offset , size };
+    BufferPlacement placement = BufferPlacement{ index };
+
+    if (regionIt == mOccupied.end())
+        mOccupied.emplace_front(bufferCoordinate);
+    else
+        mOccupied.emplace(regionIt, bufferCoordinate);
+
+    mResRegisterMap[resource] = placement;
+
+    mRemSize -= size;
+
+    return bufferCoordinate.offset;
+}
+
+uint64_t DynamicHeap::Allocate(ID3D12Resource* resource, size_t size, size_t alignment)
+{
+    if(size < mRemSize)
+        throw D3D12HeapNotEnoughMemory{"Not enough memory"};
+
+    if (size == 0)
+    {
+        Log::Error("D3D12 Resource cannot have 0 size");
+        assert(false);
+    }
+
+    if (!mOccupied.empty())
+    {
+        size_t newOffset = 0;
+        size_t index = 0;
+
+        auto region = mOccupied.begin();
+
+        if (size <= region->offset)
+            return SetResource(0, size, mOccupied.end(), resource, index);
+
+        newOffset = AlignOffset(region->offset + region->size, alignment);
+        ++region;
+        ++index;
+
+        for (region; region != mOccupied.end(); ++region)
+        {
+            if (region->offset > newOffset && region->offset - newOffset >= size)
+                return SetResource(newOffset, size, --region, resource, index);
+
+            newOffset = AlignOffset(region->offset + region->size, alignment);
+            ++index;
+        }
+
+        if (newOffset + size <= mDesc.SizeInBytes)
+            return SetResource(newOffset, size, --region, resource, index);
+
+    }
+    else
+    {
+        if (size <= mDesc.SizeInBytes)
+            return SetResource(0, size, mOccupied.end(), resource, 0);
+    }
+
+    throw D3D12HeapNotEnoughMemory{"Not enough memory"};
+}
+
+uint64_t DynamicHeap::Allocate(ID3D12Resource* resource, size_t offset, size_t size, size_t alignment)
+{
+    if (size < mRemSize)
+        throw D3D12HeapNotEnoughMemory{"Not enough memory"};
+
+    if (offset != ((offset + (alignment - 1)) & ~(alignment - 1)))
+    {
+        Log::Error("Non-aligned offset passed to D3D12 heap");
+        assert(false);
+    }
+
+    if (!mOccupied.empty())
+    {
+        auto region = mOccupied.begin();
+        size_t index = 0;
+
+        for (region; region != mOccupied.end(); ++region)
+        {
+            if (offset >= region->offset + region->size)
+            {
+                if (++region == mOccupied.end())
+                    break;
+
+                ++index;
+
+                if (offset + size <= region->offset)
+                    return SetResource(offset, size, --region, resource, index);
+                else
+                    break;
+            }
+            ++index;
+        }
+
+        if (region == mOccupied.end())
+            if (offset + size <= mDesc.SizeInBytes)
+                return SetResource(offset, size, --region, resource, index);
+    }
+    else
+        if (offset + size <= mDesc.SizeInBytes)
+            return SetResource(offset, size, mOccupied.end(), resource, 0);
+
+    Log::Error("Invalid offset used for allocation inside D3D12 heap");
+    assert(false);
+}
+
+void DynamicHeap::Deallocate(ID3D12Resource* resource)
+{
+    auto registeredResource = mResRegisterMap.find(resource);
+
+    if (registeredResource != mResRegisterMap.end())
+    {
+        auto toPop = mOccupied.begin();
+
+        std::advance(toPop, registeredResource->second.index);
+
+        mOccupied.erase(toPop);
+        mResRegisterMap.erase(registeredResource);
+    }
+}
 
 
 static D3D12_RESOURCE_STATES GetResourceTransitionState(EBufferType eType)
@@ -144,7 +286,7 @@ bool StaticBufferHeap::AllocBuffer(uint32 numElements, uint32 strideInBytes, voi
 {
     std::lock_guard<std::mutex> lock(mMtx);
 
-    uint32 size = AlignOffset(numElements * strideInBytes, (uint32)StaticBufferHeap::MEMORY_ALIGNMENT);
+    uint32 size = AlignOffset(numElements * strideInBytes, (uint32)BUFFER_MEMORY_ALIGNMENT);
     assert(mMemOffset + size < mTotalMemSize); // if this is hit, initialize heap with a larger size.
 
     *ppDataOut = (void*)(mpData + mMemOffset);
@@ -351,4 +493,226 @@ void RingBufferWithTabs::OnBeginFrame()
     // free all the entries for the oldest buffer in one go
     uint32_t memToFree = m_allocatedMemPerBackBuffer[m_backBufferIndex];
     m_mem.Free(memToFree);
+}
+
+
+
+//uint64_t DynamicHeap::Allocate(ID3D12Resource* resource, size_t size, size_t alignment, const std::list<ID3D12Resource*>& toAlias)
+//{
+//    if (toAlias.empty())
+//    {
+//        Log::Error("empty aliasing resource list passed , try using other overload fucntion of allocate");
+//        assert(false);
+//    }
+//
+//    std::pair<uint64_t, uint64_t > aliasedRange{ 0,ULLONG_MAX };
+//
+//    FindAliasedRange(aliasedRange, toAlias);
+//
+//    aliasedRange.first = (aliasedRange.first) & ~(alignment - 1);
+//
+//    if(aliasedRange.second - aliasedRange.first <= size)
+//        
+//
+//    for (auto level = mOccupied.begin(); level != mOccupied.end(); ++level)
+//    {
+//        auto region = level->begin();
+//
+//        for (region; region != level->end(); ++region)
+//        {
+//            if (aliasedRange.first >= region->offset + region->size)
+//            {
+//                ++region;
+//
+//                uint64_t right = 0;
+//                if (region == level->end())
+//                    right = mDesc.SizeInBytes;
+//                else
+//                    right = region->offset;
+//
+//                if (aliasedRange.second < right)
+//                {
+//                   
+//                }
+//
+//                if (aliasedRange.second - aliasedRange.first >= size)
+//                {
+//                    return SetResource(aliasedRange.first, size, 0, mOccupied.begin(), mOccupied.begin()->end(), resource);
+//                }
+//
+//                --region;
+//            }
+//        }
+//    }
+//}
+//
+//uint64_t DynamicHeap::Allocate(ID3D12Resource* resource, size_t offset, size_t size, size_t alignment, const std::list<ID3D12Resource*>& toAlias)
+//{
+//    return false;
+//}
+//void DynamicHeap::FindAliasedRange(std::pair<uint64_t,uint64_t>& aliasedRange, const std::list<ID3D12Resource*>& toAlias)
+//{
+//    for (auto resource = toAlias.begin(); resource != toAlias.end(); ++resource)
+//    {
+//        auto mappedResource = mResRegisterMap.find(*resource);
+//
+//        if (mappedResource != mResRegisterMap.end())
+//        {
+//            const auto& region = mappedResource->second.region;
+//
+//            if (aliasedRange.first < region.offset)
+//                aliasedRange.first = region.offset;
+//
+//            auto last = region.offset + region.size;
+//
+//            if (aliasedRange.second > last)
+//                aliasedRange.second = last;
+//        }
+//    }
+//
+//    for (auto level = mOccupied.begin(); level != mOccupied.end(); ++level)
+//    {
+//        auto region = level->begin();
+//
+//        for (region; region != level->end(); ++region)
+//        {
+//            auto left = region->offset + region->size;
+//
+//            if (left <= aliasedRange.first)
+//            {
+//                aliasedRange.first = left;
+//
+//                ++region;
+//
+//                if (region == level->end())
+//                    aliasedRange.second = mDesc.SizeInBytes;
+//                else
+//                {
+//                    if (aliasedRange.second < region->offset)
+//                        aliasedRange.second = region->offset;
+//                }
+//
+//                break;
+//            }
+//            else
+//                continue;
+//
+//        }
+//    }
+//}
+
+Buffer::~Buffer()
+{
+    std::lock_guard<std::mutex> lock(mMtx);
+
+    if(mbIsResident)
+        Release();
+
+    mFence.Destroy();
+}
+
+void VertexBuffer::Create(ID3D12Device* pDevice, uint32 numVertices, uint32 strideInBytes, const void* pInitData, D3D12_VERTEX_BUFFER_VIEW* pViewOut , D3D12_HEAP_DESC& desc)
+{
+    std::lock_guard<std::mutex> lock(mMtx);
+
+    if (!mbIsResident)
+    {
+        mSize = AlignOffset((uint64_t)numVertices * strideInBytes , BUFFER_MEMORY_ALIGNMENT);
+        AllocOnHeap(pDevice, desc);
+
+
+        mbIsResident = true;
+    }
+}
+
+void IndexBuffer::Create(ID3D12Device* pDevice, uint32 numIndices, uint32 strideInBytes, const void* pInitData, D3D12_INDEX_BUFFER_VIEW* pViewOut, D3D12_HEAP_DESC& desc)
+{
+    std::lock_guard<std::mutex> lock(mMtx);
+
+    if (!mbIsResident)
+    {
+        mSize = AlignOffset((uint64_t)numIndices * strideInBytes, BUFFER_MEMORY_ALIGNMENT);
+        AllocOnHeap(pDevice, desc);
+
+        mbIsResident = true;
+    }
+}
+
+void Buffer::Release()
+{
+    std::lock_guard<std::mutex> lock(mMtx);
+    mFence.WaitOnCPU(mFenceValue);
+
+    DeallocateFromHeap();
+}
+
+void Buffer::UploadOnGPU(ID3D12CommandQueue* mCommndQueue , ID3D12GraphicsCommandList* pCmdList)
+{
+    std::lock_guard<std::mutex> lock(mMtx);
+
+    if (mbUseVidMem)
+    {
+        D3D12_RESOURCE_STATES state = GetResourceTransitionState(mType);
+
+        pCmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mVidResource
+            , state
+            , D3D12_RESOURCE_STATE_COPY_DEST)
+        );
+
+        pCmdList->CopyBufferRegion(mVidResource, 0, mSysResource, 0, mSize);
+
+        pCmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mVidResource
+            , D3D12_RESOURCE_STATE_COPY_DEST
+            , state)
+        );
+
+        mFenceValue = mFence.Signal(mCommndQueue);
+    }
+}
+
+
+void Buffer::AllocOnHeap(ID3D12Device* pDevice, D3D12_HEAP_DESC& desc)
+{
+    if (!mGlobalHeaps.empty())
+    {
+        for (auto& heap : mGlobalHeaps)
+        {
+            //check to see if heap has enough memory , but in allocation phase , it may fail anyway , allocations are not contigious
+            if (heap->IsAvailable(mSize))
+            {
+                try
+                {
+                    mSysOffsetInHeap = mSysResourceHeap->Allocate(mSysResource, mSize, BUFFER_MEMORY_ALIGNMENT);
+
+                    if (mbUseVidMem)
+                        mVidOffsetInHeap = mVidResourceHeap->Allocate(mVidResource, mSize, BUFFER_MEMORY_ALIGNMENT);
+                }
+                catch (const D3D12HeapNotEnoughMemory& e)
+                {
+                    continue;
+                }
+            }
+        }
+    }
+
+    auto heap = mSysResourceHeap = mVidResourceHeap = mGlobalHeaps.emplace_back();
+
+    auto requiredHeapSize = mSize * 2;
+    
+    desc.SizeInBytes = max(desc.SizeInBytes , requiredHeapSize);
+
+    heap->Create(pDevice, desc);
+
+    mSysOffsetInHeap = heap->Allocate(mSysResource, mSize, BUFFER_MEMORY_ALIGNMENT);
+
+    if (mbUseVidMem)
+        mVidOffsetInHeap = heap->Allocate(mVidResource, mSize ,BUFFER_MEMORY_ALIGNMENT);
+}
+
+void Buffer::DeallocateFromHeap()
+{
+    mSysResourceHeap->Deallocate(mSysResource);
+
+    if (mbUseVidMem)
+        mVidResourceHeap->Deallocate(mVidResource);
 }

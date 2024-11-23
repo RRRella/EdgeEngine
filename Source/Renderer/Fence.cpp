@@ -16,10 +16,12 @@ void Fence::Destroy()
     CloseHandle(mHEvent);
 }
 
-void Fence::Signal(ID3D12CommandQueue* pCommandQueue)
+UINT64 Fence::Signal(ID3D12CommandQueue* pCommandQueue)
 {
     ++mFenceValue;
     pCommandQueue->Signal(mpFence, mFenceValue);
+
+    return mFenceValue;
 }
 
 

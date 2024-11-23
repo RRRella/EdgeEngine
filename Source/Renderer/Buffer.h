@@ -2,33 +2,18 @@
 
 #include "ResourceHeaps.h"
 #include "Common.h"
+#include <unordered_map>
 
 #include <mutex>
+
+#include "Fence.h"
 
 struct ID3D12Device;
 struct ID3D12Resource;
 struct D3D12_CONSTANT_BUFFER_VIEW_DESC;
 struct ID3D12GraphicsCommandList;
 
-//
-// BUFFER DESCRIPTOR
-//
-enum EBufferType
-{
-    VERTEX_BUFFER = 0,
-    INDEX_BUFFER,
-    CONSTANT_BUFFER,
-    NUM_BUFFER_TYPES
-};
-struct FBufferDesc
-{
-    EBufferType Type;
-    uint        NumElements;
-    uint        Stride;
-    const void* pData;
-    std::string Name;
-};
-
+#define BUFFER_MEMORY_ALIGNMENT 256llu
 
 //
 // VERTEX BUFFER DEFINITIONS
@@ -194,9 +179,168 @@ inline bool operator==(const FVertexWithNormalAndTangent& lhs, const FVertexWith
     return true;
 }
 
+class D3D12HeapNotEnoughMemory : public std::exception
+{
+public:
+    D3D12HeapNotEnoughMemory(const char* info) : std::exception(info)
+    {}
+};
+
+class DynamicHeap
+{
+    struct BufferRegion
+    {
+        size_t offset;
+        size_t size;
+    };
+
+    struct BufferPlacement
+    {
+        uint64_t index;
+    };
+
+    //struct BufferCoordinate
+    //{
+    //    BufferRegion region;
+    //    uint8_t level;
+    //};
+
+    using Occupied = std::list<BufferRegion>;
+    using RegistereMap = std::unordered_map<ID3D12Resource*, BufferPlacement>;
+
+public:
+    void Create(ID3D12Device* device , const D3D12_HEAP_DESC& desc);
+    void Destroy();
+
+    uint64_t Allocate(ID3D12Resource* resource, size_t size, size_t alignment);
+    uint64_t Allocate(ID3D12Resource* resource, size_t offset, size_t size, size_t alignment);
+
+    bool IsAvailable(const uint64_t size) const { return size >= mRemSize; }
+
+    //uint64_t Allocate(ID3D12Resource* resource, size_t size,   size_t alignment, const std::list<ID3D12Resource*>& toAlias);
+    //uint64_t Allocate(ID3D12Resource* resource, size_t offset, size_t size, size_t alignment, const std::list<ID3D12Resource*>& toAlias);
+
+
+    void Deallocate(ID3D12Resource* resource);
+
+    //void SetAliasmentState(bool aliasment) 
+    //{
+    //    if(mOccupied.size() <= 1)
+    //        mbAliasAllowed = aliasment;
+    //    else
+    //    {
+    //        Log::Warning("Couldn't change Dynamic Heap aliasment policy because it's in \"alisament\" state");
+    //    }
+    //
+    //}
+
+    const D3D12_HEAP_DESC& GetDesc() const { return mDesc; }
+
+private:
+
+    uint64_t SetResource(const size_t& offset, const size_t& size, std::list<BufferRegion>::iterator regionIt, ID3D12Resource* resource, uint64_t index);
+
+    //void FindAliasedRange(std::pair<uint64_t, uint64_t>& aliasedRange, const std::list<ID3D12Resource*>& toAlias);
+
+    ID3D12Heap1* mHeap;
+    D3D12_HEAP_DESC mDesc;
+
+    uint64_t mRemSize;
+
+    Occupied mOccupied;
+
+    RegistereMap mResRegisterMap;
+
+    //bool mbAliasAllowed;
+};
+
+//
+// BUFFER DESCRIPTOR
+//
+enum EBufferType
+{
+    VERTEX_BUFFER = 0,
+    INDEX_BUFFER,
+    CONSTANT_BUFFER,
+    NUM_BUFFER_TYPES
+};
+struct FBufferDesc
+{
+    EBufferType Type;
+    uint        NumElements;
+    uint        Stride;
+    const void* pData;
+    std::string Name;
+};
+
+class Buffer
+{
+public:
+    void Release();
+
+    void UploadOnGPU(ID3D12CommandQueue* mCommndQueue , ID3D12GraphicsCommandList* pCmdList);
+
+    virtual ~Buffer();
+
+protected:
+    Buffer(bool bUseVidMem) :mbUseVidMem(bUseVidMem) 
+    {
+        mFence.Create(mpDevice, "Buffer Fence");
+    }
+
+    void AllocOnHeap(ID3D12Device* pDevice, D3D12_HEAP_DESC& desc);
+    void DeallocateFromHeap();
+
+    std::mutex mMtx;
+
+    ID3D12Device* mpDevice = nullptr;
+
+    static std::list<std::shared_ptr<DynamicHeap>> mGlobalHeaps;
+
+    std::shared_ptr<DynamicHeap> mSysResourceHeap;
+    std::shared_ptr<DynamicHeap> mVidResourceHeap;
+
+    ID3D12Resource* mSysResource = nullptr;
+    ID3D12Resource* mVidResource = nullptr;
+
+    EBufferType mType = EBufferType::NUM_BUFFER_TYPES;
+
+    uint64_t mSysOffsetInHeap = 0;
+    uint64_t mVidOffsetInHeap = 0;
+    uint64_t mSize = 0 ;
+
+    bool mbIsResident = false;
+    bool mbUseVidMem = false;
+
+    Fence mFence;
+    uint64_t mFenceValue = 0;
+};
+
+class VertexBuffer : public Buffer
+{
+public:
+    VertexBuffer(bool bUseVidMem) :Buffer(bUseVidMem) {}
+
+    void Create(ID3D12Device* pDevice,uint32 numVertices, uint32 strideInBytes, const void* pInitData, D3D12_VERTEX_BUFFER_VIEW* pViewOut, D3D12_HEAP_DESC& desc);
+    
+private:
+
+};
+
+class IndexBuffer : public Buffer
+{
+public:
+    IndexBuffer(bool bUseVidMem) :Buffer(bUseVidMem) {}
+
+    void Create(ID3D12Device* pDevice,uint32 numIndices, uint32 strideInBytes, const void* pInitData, D3D12_INDEX_BUFFER_VIEW* pViewOut, D3D12_HEAP_DESC& desc);
+
+private:
+
+};
+
+
 class StaticBufferHeap
 {
-    static size_t MEMORY_ALIGNMENT; // TODO: potentially move to renderer settings ini or make a member
 public:
     void Create(ID3D12Device* pDevice, EBufferType type, uint32 totalMemSize, bool bUseVidMem, const char* name);
     void Destroy();
@@ -229,6 +373,7 @@ private:
     ID3D12Resource* mpSysMemBuffer = nullptr;
     ID3D12Resource* mpVidMemBuffer = nullptr;
 };
+
 
 //
 // RING BUFFERS
