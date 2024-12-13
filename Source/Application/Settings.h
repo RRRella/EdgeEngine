@@ -15,6 +15,8 @@ struct FGraphicsSettings
 	bool bUseTripleBuffering = false;
 
 	float RenderScale = 1.0f;
+
+	uint64_t HeapDefaultSize = 1024 * 1024 * 300;
 };
 
 struct FWindowSettings

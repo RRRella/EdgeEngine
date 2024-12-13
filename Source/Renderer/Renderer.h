@@ -53,7 +53,6 @@ struct FWindowRenderContext
 	SwapChain    SwapChain;
 	CommandQueue PresentQueue;
 
-
 	std::vector<ID3D12CommandAllocator*> mCommandAllocatorsGFX;
 	std::vector<ID3D12CommandAllocator*> mCommandAllocatorsCompute;
 	std::vector<ID3D12CommandAllocator*> mCommandAllocatorsCopy;
@@ -147,14 +146,17 @@ public:
 
 	void LoadDefaultResources();
 	void LoadPSOs();
+
+	VertexBuffer* GetVertexBuffer(BufferID id) { return mVertexBuffers[id].get(); }
+	IndexBuffer*  GetIndexBuffer(BufferID id) { return mIndexBuffers[id].get(); }
 private:
 	using PSOArray_t           = std::array<ID3D12PipelineState*, EBuiltinPSOs::NUM_BUILTIN_PSOs>;
 
 	// GPU
 	Device                                         mDevice; 
-	CommandQueue                                   mGFXQueue;
-	CommandQueue                                   mComputeQueue;
-	CommandQueue                                   mCopyQueue;
+	CommandQueue								   mGFXQueue;
+	CommandQueue								   mComputeQueue;
+    CommandQueue								   mCopyQueue;
 
 	// memory
 	D3D12MA::Allocator*                            mpAllocator;
@@ -164,8 +166,11 @@ private:
 	StaticResourceViewHeap                         mHeapSampler;
 	StaticResourceViewHeap						   mHeapImguiSRV;
 	UploadHeap                                     mHeapUpload;
-	StaticBufferHeap                               mStaticHeap_VertexBuffer;
-	StaticBufferHeap                               mStaticHeap_IndexBuffer;
+	//StaticBufferHeap                               mStaticHeap_VertexBuffer;
+	//StaticBufferHeap                               mStaticHeap_IndexBuffer;
+
+	std::unordered_map<BufferID, std::unique_ptr<VertexBuffer>>     mVertexBuffers;
+	std::unordered_map<BufferID, std::unique_ptr<IndexBuffer>>      mIndexBuffers;
 
 	// resources & views
 	std::unordered_map<TextureID, Texture>         mTextures;
@@ -189,6 +194,8 @@ private:
 	mutable std::mutex                             mMtxUAVs;
 	mutable std::mutex                             mMtxVBVs;
 	mutable std::mutex                             mMtxIBVs;
+
+	D3D12_HEAP_DESC								   mDefaultHeapDesc;
 
 	// root signatures
 	std::vector<ID3D12RootSignature*>              mpBuiltinRootSignatures;

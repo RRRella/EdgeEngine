@@ -234,18 +234,18 @@ void Engine::UpdateThread_UpdateScene(const float dt)
 	{
 		if (input.IsMouseDown(MOUSE_BUTTON_RIGHT))
 		{
-			LocalSpaceTranslation += XMVECTOR{-1.0f,0.0f,0.0f} * input.GetMouseDelta()[0] * 0.1f;
-			LocalSpaceTranslation += XMVECTOR{ 0.0f,1.0f,0.0f} * input.GetMouseDelta()[1] * 0.1f;
+			LocalSpaceTranslation += XMVECTOR{-1.0f,0.0f,0.0f} * input.GetMouseDelta()[0] * mMouseDragSensitivity;
+			LocalSpaceTranslation += XMVECTOR{ 0.0f,1.0f,0.0f} * input.GetMouseDelta()[1] * mMouseDragSensitivity;
 
 			LocalSpaceTranslation *= CAMERA_MOVEMENT_SPEED_MULTIPLER;
 		}
 		if (input.IsMouseDown(MOUSE_BUTTON_LEFT))
 		{
-			FrameData.SceneCamera.Rotate(input.GetMouseDelta()[0], input.GetMouseDelta()[1], dt);
+			FrameData.SceneCamera.Rotate(input.GetMouseDelta()[0], input.GetMouseDelta()[1], dt * mMouseRotSensitivity);
 		}
 		if (input.IsMouseScrollDown() || input.IsMouseScrollUp())
 		{
-			LocalSpaceTranslation += XMVECTOR{ 0.0f,0.0f,1.0f } * input.GetMouseScroll() * 0.5f;
+			LocalSpaceTranslation += XMVECTOR{ 0.0f,0.0f,1.0f } * input.GetMouseScroll() * 0.5;
 		}
 	}
 	

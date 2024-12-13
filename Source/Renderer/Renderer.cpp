@@ -70,6 +70,15 @@ void Renderer::Initialize(const FRendererInitializeParameters& params)
 	const FGraphicsSettings& Settings = params.Settings;
 	const int NUM_SWAPCHAIN_BUFFERS   = Settings.bUseTripleBuffering ? 3 : 2;
 
+	mDefaultHeapDesc.Alignment = 0;
+	mDefaultHeapDesc.Flags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+	mDefaultHeapDesc.SizeInBytes = Settings.HeapDefaultSize;
+	mDefaultHeapDesc.Properties.Type = D3D12_HEAP_TYPE_DEFAULT;
+	mDefaultHeapDesc.Properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	mDefaultHeapDesc.Properties.CreationNodeMask = 0;
+	mDefaultHeapDesc.Properties.VisibleNodeMask = 0;
+	mDefaultHeapDesc.Properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+
 
 	// Create the device
 	FDeviceCreateDesc deviceDesc = {};
@@ -94,8 +103,6 @@ void Renderer::Initialize(const FRendererInitializeParameters& params)
 
 void Renderer::Load()
 {
-	
-	LoadDefaultResources();
 	mHeapUpload.UploadToGPUAndWait(mGFXQueue.pQueue);
 }
 
@@ -104,14 +111,12 @@ void Renderer::Unload()
 
 }
 
-
 void Renderer::Exit()
 {
 	mHeapUpload.Destroy();
 	mHeapCBV_SRV_UAV.Destroy();
 	mHeapDSV.Destroy();
-	mStaticHeap_VertexBuffer.Destroy();
-	mStaticHeap_IndexBuffer.Destroy();
+	
 	for (std::unordered_map<TextureID, Texture>::iterator it = mTextures.begin(); it != mTextures.end(); ++it)
 	{
 		it->second.Destroy();
@@ -170,7 +175,6 @@ short Renderer::GetSwapChainBackBufferCount(HWND hwnd) const
 
 	const FWindowRenderContext& ctx = mRenderContextLookup.at(hwnd);
 	return ctx.SwapChain.GetNumBackBuffers();
-	
 }
 
 void Renderer::InitializeRenderContext(FWindowRepresentation& WndDesc, int NumSwapchainBuffers)
@@ -301,8 +305,6 @@ void Renderer::InitializeHeaps()
 
 	constexpr uint32 STATIC_GEOMETRY_MEMORY_SIZE = 32 * MEGABYTE;
 	constexpr bool USE_GPU_MEMORY = true;
-	mStaticHeap_VertexBuffer.Create(pDevice, EBufferType::VERTEX_BUFFER, STATIC_GEOMETRY_MEMORY_SIZE, USE_GPU_MEMORY, "VQRenderer::mStaticVertexBufferPool");
-	mStaticHeap_IndexBuffer.Create(pDevice, EBufferType::INDEX_BUFFER, STATIC_GEOMETRY_MEMORY_SIZE, USE_GPU_MEMORY, "VQRenderer::mStaticIndexBufferPool");
 }
 
 static std::wstring GetAssetFullPath(LPCWSTR assetName)
@@ -643,8 +645,8 @@ void Renderer::LoadPSOs()
 
 void Renderer::LoadDefaultResources()
 {
-	mStaticHeap_VertexBuffer.UploadData(mHeapUpload.GetCommandList());
-	mStaticHeap_IndexBuffer.UploadData(mHeapUpload.GetCommandList());
+	
+	
 }
 
 

@@ -93,6 +93,7 @@ void Engine::InitializeEngineSettings(const FStartupParameters& Params)
 	if (paramFile.bOverrideGFXSetting_bVSync     )                 s.gfx.bVsync              = pf.gfx.bVsync;
 	if (paramFile.bOverrideGFXSetting_bUseTripleBuffering)         s.gfx.bUseTripleBuffering = pf.gfx.bUseTripleBuffering;
 	if (paramFile.bOverrideGFXSetting_RenderScale)                 s.gfx.RenderScale         = pf.gfx.RenderScale;
+	if (paramFile.bOverrideGFXSetting_ResourceHeapDefaultSize)     s.gfx.HeapDefaultSize     = pf.gfx.HeapDefaultSize;
 
 	if (paramFile.bOverrideENGSetting_MainWindowWidth)             s.WndMain.Width            = pf.WndMain.Width;
 	if (paramFile.bOverrideENGSetting_MainWindowHeight)            s.WndMain.Height           = pf.WndMain.Height;
@@ -302,6 +303,12 @@ FStartupParameters Engine::ParseEngineSettingsFile()
 				params.bOverrideGFXSetting_bUseTripleBuffering = true;
 				params.EngineSettings.gfx.bUseTripleBuffering = ParseBool(SettingValue);
 			}
+			if (SettingName == "HeapDefaultSize")
+			{
+				params.bOverrideGFXSetting_ResourceHeapDefaultSize = true;
+				params.EngineSettings.gfx.HeapDefaultSize = ParseInt(SettingValue);
+			}
+
 
 
 			// 

@@ -24,14 +24,15 @@ struct FStartupParameters
 	Log::LogInitializeParams  LogInitParams;
 
 	FEngineSettings EngineSettings;
-	uint8 bOverrideGFXSetting_RenderScale;
-	uint8 bOverrideGFXSetting_bVSync;
-	uint8 bOverrideGFXSetting_bUseTripleBuffering;
+	bool bOverrideGFXSetting_RenderScale;
+	bool bOverrideGFXSetting_bVSync;
+	bool bOverrideGFXSetting_bUseTripleBuffering;
+	bool bOverrideGFXSetting_ResourceHeapDefaultSize;
 
-	uint8 bOverrideENGSetting_MainWindowHeight;
-	uint8 bOverrideENGSetting_MainWindowWidth;
-	uint8 bOverrideENGSetting_bFullscreen;
-	uint8 bOverrideENGSetting_PreferredDisplay;
+	bool bOverrideENGSetting_MainWindowHeight;
+	bool bOverrideENGSetting_MainWindowWidth;
+	bool bOverrideENGSetting_bFullscreen;
+	bool bOverrideENGSetting_PreferredDisplay;
 };
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

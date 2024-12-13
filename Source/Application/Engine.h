@@ -234,7 +234,8 @@ private:
 	// transition of swapchains which are initialzied fullscreen.
 	std::unordered_map<HWND, bool>  mInitialSwapchainResizeRequiredWindowLookup;
 
-
+	float mMouseDragSensitivity = 0.5f;
+	float mMouseRotSensitivity = 1.0f;
 private:
 	void                            InitializeEngineSettings(const FStartupParameters& Params);
 	void                            InitializeWindows(const FStartupParameters& Params);

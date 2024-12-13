@@ -5,6 +5,8 @@
 
 #include <cassert>
 
+std::list<std::shared_ptr<DynamicHeap>> Buffer::mGlobalHeaps = {};
+
 void DynamicHeap::Create(ID3D12Device* device, const D3D12_HEAP_DESC& desc)
 {
     mDesc = desc;
@@ -26,24 +28,26 @@ void DynamicHeap::Destroy()
     mHeap->Release();
 }
 
-uint64_t DynamicHeap::SetResource(const size_t& offset, const size_t& size, std::list<BufferRegion>::iterator regionIt, ID3D12Resource* resource, uint64_t index)
+uint64_t DynamicHeap::SetResource(const size_t& offset, const size_t& size, std::list<BufferRegion>::iterator regionIt)
 {
     BufferRegion bufferCoordinate = BufferRegion{ offset , size };
-    BufferPlacement placement = BufferPlacement{ index };
 
     if (regionIt == mOccupied.end())
         mOccupied.emplace_front(bufferCoordinate);
     else
         mOccupied.emplace(regionIt, bufferCoordinate);
 
-    mResRegisterMap[resource] = placement;
-
     mRemSize -= size;
 
     return bufferCoordinate.offset;
 }
 
-uint64_t DynamicHeap::Allocate(ID3D12Resource* resource, size_t size, size_t alignment)
+void DynamicHeap::RegisterResource(ID3D12Resource* resource,uint64_t index)
+{
+    mResRegisterMap[resource] = BufferPlacement{ index };
+}
+
+uint64_t DynamicHeap::Allocate(ID3D12Resource* resource, size_t size, size_t alignment, uint64_t& indexInHeap)
 {
     if(size < mRemSize)
         throw D3D12HeapNotEnoughMemory{"Not enough memory"};
@@ -62,7 +66,10 @@ uint64_t DynamicHeap::Allocate(ID3D12Resource* resource, size_t size, size_t ali
         auto region = mOccupied.begin();
 
         if (size <= region->offset)
-            return SetResource(0, size, mOccupied.end(), resource, index);
+        {
+            return SetResource(0, size, mOccupied.end());
+            indexInHeap = index;
+        }
 
         newOffset = AlignOffset(region->offset + region->size, alignment);
         ++region;
@@ -71,26 +78,35 @@ uint64_t DynamicHeap::Allocate(ID3D12Resource* resource, size_t size, size_t ali
         for (region; region != mOccupied.end(); ++region)
         {
             if (region->offset > newOffset && region->offset - newOffset >= size)
-                return SetResource(newOffset, size, --region, resource, index);
+            {
+                return SetResource(newOffset, size, --region);
+                indexInHeap = index;
+            }
 
             newOffset = AlignOffset(region->offset + region->size, alignment);
             ++index;
         }
 
         if (newOffset + size <= mDesc.SizeInBytes)
-            return SetResource(newOffset, size, --region, resource, index);
+        {
+            return SetResource(newOffset, size, --region);
+            indexInHeap = index;
+        }
 
     }
     else
     {
         if (size <= mDesc.SizeInBytes)
-            return SetResource(0, size, mOccupied.end(), resource, 0);
+        {
+            return SetResource(0, size, mOccupied.end());
+            indexInHeap = 0;
+        }
     }
 
     throw D3D12HeapNotEnoughMemory{"Not enough memory"};
 }
 
-uint64_t DynamicHeap::Allocate(ID3D12Resource* resource, size_t offset, size_t size, size_t alignment)
+uint64_t DynamicHeap::Allocate(ID3D12Resource* resource, size_t offset, size_t size, size_t alignment, uint64_t& indexInHeap)
 {
     if (size < mRemSize)
         throw D3D12HeapNotEnoughMemory{"Not enough memory"};
@@ -116,7 +132,10 @@ uint64_t DynamicHeap::Allocate(ID3D12Resource* resource, size_t offset, size_t s
                 ++index;
 
                 if (offset + size <= region->offset)
-                    return SetResource(offset, size, --region, resource, index);
+                {
+                    return SetResource(offset, size, --region);
+                    indexInHeap = index;
+                }
                 else
                     break;
             }
@@ -125,11 +144,17 @@ uint64_t DynamicHeap::Allocate(ID3D12Resource* resource, size_t offset, size_t s
 
         if (region == mOccupied.end())
             if (offset + size <= mDesc.SizeInBytes)
-                return SetResource(offset, size, --region, resource, index);
+            {
+                return SetResource(offset, size, --region);
+                indexInHeap = index;
+            }
     }
     else
         if (offset + size <= mDesc.SizeInBytes)
-            return SetResource(offset, size, mOccupied.end(), resource, 0);
+        { 
+            return SetResource(offset, size, mOccupied.end());
+            indexInHeap = 0;
+        }
 
     Log::Error("Invalid offset used for allocation inside D3D12 heap");
     assert(false);
@@ -603,38 +628,58 @@ void RingBufferWithTabs::OnBeginFrame()
 
 Buffer::~Buffer()
 {
-    std::lock_guard<std::mutex> lock(mMtx);
+    //Dont need to put a lock here 
+    //because it's illegal to enter this section when it's deleted from the first place
 
-    if(mbIsResident)
+    if(mbCreated)
         Release();
 
     mFence.Destroy();
 }
 
-void VertexBuffer::Create(ID3D12Device* pDevice, uint32 numVertices, uint32 strideInBytes, const void* pInitData, D3D12_VERTEX_BUFFER_VIEW* pViewOut , D3D12_HEAP_DESC& desc)
+void VertexBuffer::Create(uint32 numVertices, uint32 strideInBytes, const void* pInitData, D3D12_VERTEX_BUFFER_VIEW* pViewOut , const D3D12_HEAP_DESC& desc)
 {
     std::lock_guard<std::mutex> lock(mMtx);
 
-    if (!mbIsResident)
+    if (!mbCreated)
     {
-        mSize = AlignOffset((uint64_t)numVertices * strideInBytes , BUFFER_MEMORY_ALIGNMENT);
-        AllocOnHeap(pDevice, desc);
+        AllocBuffer(numVertices, strideInBytes, pInitData, desc);
 
+        if (mbUseVidMem)
+            pViewOut->BufferLocation = mVidResource->GetGPUVirtualAddress();
+        else
+            pViewOut->BufferLocation = mSysResource->GetGPUVirtualAddress();
 
-        mbIsResident = true;
+        pViewOut->SizeInBytes = mSize;
+
+        pViewOut->StrideInBytes = strideInBytes;
+
+        UploadOnGPU();
+
+        mbCreated = true;
     }
 }
 
-void IndexBuffer::Create(ID3D12Device* pDevice, uint32 numIndices, uint32 strideInBytes, const void* pInitData, D3D12_INDEX_BUFFER_VIEW* pViewOut, D3D12_HEAP_DESC& desc)
+void IndexBuffer::Create(uint32 numIndices, uint32 strideInBytes, const void* pInitData, D3D12_INDEX_BUFFER_VIEW* pViewOut, const D3D12_HEAP_DESC& desc)
 {
     std::lock_guard<std::mutex> lock(mMtx);
 
-    if (!mbIsResident)
+    if (!mbCreated)
     {
-        mSize = AlignOffset((uint64_t)numIndices * strideInBytes, BUFFER_MEMORY_ALIGNMENT);
-        AllocOnHeap(pDevice, desc);
+        AllocBuffer(numIndices, strideInBytes, pInitData, desc);
 
-        mbIsResident = true;
+        if (mbUseVidMem)
+            pViewOut->BufferLocation = mVidResource->GetGPUVirtualAddress();
+        else
+            pViewOut->BufferLocation = mSysResource->GetGPUVirtualAddress();
+
+        pViewOut->SizeInBytes = mSize;
+
+        pViewOut->Format = ((strideInBytes == 4) ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT);
+
+        UploadOnGPU();
+
+        mbCreated = true;
     }
 }
 
@@ -644,48 +689,85 @@ void Buffer::Release()
     mFence.WaitOnCPU(mFenceValue);
 
     DeallocateFromHeap();
+
+    mbIsResident = false;
+    mbCreated = false;
 }
 
-void Buffer::UploadOnGPU(ID3D12CommandQueue* mCommndQueue , ID3D12GraphicsCommandList* pCmdList)
+void Buffer::UploadOnGPU()
 {
-    std::lock_guard<std::mutex> lock(mMtx);
-
     if (mbUseVidMem)
     {
-        D3D12_RESOURCE_STATES state = GetResourceTransitionState(mType);
+        if (!mbIsResident)
+        {
+            mpDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAllocator));
+            mpDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator, nullptr, IID_PPV_ARGS(&mCommandList));
 
-        pCmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mVidResource
-            , state
-            , D3D12_RESOURCE_STATE_COPY_DEST)
-        );
+            D3D12_RESOURCE_STATES state = GetResourceTransitionState(mType);
 
-        pCmdList->CopyBufferRegion(mVidResource, 0, mSysResource, 0, mSize);
+            mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mVidResource
+                , state
+                , D3D12_RESOURCE_STATE_COPY_DEST)
+            );
 
-        pCmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mVidResource
-            , D3D12_RESOURCE_STATE_COPY_DEST
-            , state)
-        );
+            mCommandList->CopyBufferRegion(mVidResource, 0, mSysResource, 0, mSize);
 
-        mFenceValue = mFence.Signal(mCommndQueue);
+            mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mVidResource
+                , D3D12_RESOURCE_STATE_COPY_DEST
+                , state)
+            );
+
+            mCommandList->Close();
+            mCommndQueue->ExecuteCommandLists(1, CommandListCast(&mCommandList));
+
+            mFenceValue = mFence.Signal(mCommndQueue);
+
+            mbIsResident = true;
+        }
     }
 }
 
 
-void Buffer::AllocOnHeap(ID3D12Device* pDevice, D3D12_HEAP_DESC& desc)
+void Buffer::AllocOnHeap(const D3D12_HEAP_DESC& desc, uint64_t& indexInVidHeap, uint64_t& indexInSysHeap)
 {
     if (!mGlobalHeaps.empty())
     {
+        bool SysMemAllocated = false;
+        bool VidMemAllocated = false;
         for (auto& heap : mGlobalHeaps)
         {
+            if (SysMemAllocated && VidMemAllocated)
+                return;
+
             //check to see if heap has enough memory , but in allocation phase , it may fail anyway , allocations are not contigious
+
             if (heap->IsAvailable(mSize))
             {
                 try
                 {
-                    mSysOffsetInHeap = mSysResourceHeap->Allocate(mSysResource, mSize, BUFFER_MEMORY_ALIGNMENT);
+                    if (!SysMemAllocated)
+                    {
+                        if (heap->GetDesc().Properties.Type == D3D12_HEAP_TYPE_UPLOAD)
+                        {
+                            mSysOffsetInHeap = heap->Allocate(mSysResource, mSize, BUFFER_MEMORY_ALIGNMENT, indexInSysHeap);
+                            mSysResourceHeap = heap;
+                            SysMemAllocated = true;
+                        }
+                    }
+                    
 
                     if (mbUseVidMem)
-                        mVidOffsetInHeap = mVidResourceHeap->Allocate(mVidResource, mSize, BUFFER_MEMORY_ALIGNMENT);
+                    {
+                        if (!VidMemAllocated)
+                        {
+                            if (heap->GetDesc().Properties.Type == D3D12_HEAP_TYPE_DEFAULT)
+                            {
+                                mVidOffsetInHeap = heap->Allocate(mVidResource, mSize, BUFFER_MEMORY_ALIGNMENT, indexInVidHeap);
+                                mVidResourceHeap = heap;
+                                VidMemAllocated = true;
+                            }
+                        }
+                    }
                 }
                 catch (const D3D12HeapNotEnoughMemory& e)
                 {
@@ -695,24 +777,105 @@ void Buffer::AllocOnHeap(ID3D12Device* pDevice, D3D12_HEAP_DESC& desc)
         }
     }
 
-    auto heap = mSysResourceHeap = mVidResourceHeap = mGlobalHeaps.emplace_back();
+    mSysResourceHeap = mGlobalHeaps.emplace_back(std::make_shared<DynamicHeap>());
+    mVidResourceHeap = mGlobalHeaps.emplace_back(std::make_shared<DynamicHeap>());
 
-    auto requiredHeapSize = mSize * 2;
-    
-    desc.SizeInBytes = max(desc.SizeInBytes , requiredHeapSize);
+    auto uploadDesc = desc;
+    uploadDesc.Properties.Type = D3D12_HEAP_TYPE_UPLOAD;
+    uploadDesc.SizeInBytes = mSize;
 
-    heap->Create(pDevice, desc);
+    auto defaultDesc = desc;
+    defaultDesc.Properties.Type = D3D12_HEAP_TYPE_DEFAULT;
+    defaultDesc.SizeInBytes = mSize;
 
-    mSysOffsetInHeap = heap->Allocate(mSysResource, mSize, BUFFER_MEMORY_ALIGNMENT);
+    mSysResourceHeap->Create(mpDevice, uploadDesc);
+    mVidResourceHeap->Create(mpDevice, defaultDesc);
+
+
+    mSysOffsetInHeap = mSysResourceHeap->Allocate(mSysResource, mSize, BUFFER_MEMORY_ALIGNMENT, indexInSysHeap);
 
     if (mbUseVidMem)
-        mVidOffsetInHeap = heap->Allocate(mVidResource, mSize ,BUFFER_MEMORY_ALIGNMENT);
+        mVidOffsetInHeap = mVidResourceHeap->Allocate(mVidResource, mSize, BUFFER_MEMORY_ALIGNMENT, indexInVidHeap);
 }
 
 void Buffer::DeallocateFromHeap()
 {
+    //Deallocate resources from their respective heaps
     mSysResourceHeap->Deallocate(mSysResource);
+    mSysResource->Release();
+
+    if (mSysResourceHeap->IsEmpty())
+    {
+        auto loc = std::find(mGlobalHeaps.begin(), mGlobalHeaps.end(), mSysResourceHeap);
+
+        mGlobalHeaps.erase(loc);
+        mSysResourceHeap.reset();
+    }
+
 
     if (mbUseVidMem)
+    {
         mVidResourceHeap->Deallocate(mVidResource);
+        mVidResource->Release();
+
+        if (mVidResourceHeap->IsEmpty())
+        {
+            auto loc = std::find(mGlobalHeaps.begin(), mGlobalHeaps.end(), mVidResourceHeap);
+
+            mGlobalHeaps.erase(loc);
+            mVidResourceHeap.reset();
+        }
+    }
+}
+
+void Buffer::AllocBuffer(uint32 numElements, uint32 strideInBytes, const void* pInitData, const D3D12_HEAP_DESC& desc)
+{
+    mSize = AlignOffset((uint64_t)numElements * strideInBytes, BUFFER_MEMORY_ALIGNMENT);
+    uint64_t indexInSysHeap = 0;
+    uint64_t indexInVidHeap = 0;
+    AllocOnHeap(desc, indexInVidHeap, indexInSysHeap);
+
+    HRESULT hr = {};
+    if (mbUseVidMem)
+    {
+        auto heapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+        auto bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mSize);
+        hr = mpDevice->CreatePlacedResource(
+            mVidResourceHeap->GetHeap(),
+            mVidOffsetInHeap,
+            &bufferDesc,
+            GetResourceTransitionState(mType),
+            nullptr,
+            IID_PPV_ARGS(&mVidResource));
+
+        if (FAILED(hr))
+            assert(false);
+
+        mVidResource->SetName(L"VidMemBuffer");
+
+        mVidResourceHeap->RegisterResource(mVidResource, indexInVidHeap);
+    }
+
+    auto heapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+    auto bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mSize);
+    hr = mpDevice->CreatePlacedResource(
+        mSysResourceHeap->GetHeap(),
+        mSysOffsetInHeap,
+        &bufferDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(&mSysResource));
+
+    if (FAILED(hr))
+        assert(false);
+
+    mSysResource->SetName(L"SysMemBuffer");
+
+    mSysResourceHeap->RegisterResource(mSysResource, indexInSysHeap);
+
+    UINT8* data = nullptr;
+
+    mSysResource->Map(0, NULL, reinterpret_cast<void**>(&data));
+
+    memcpy(data, pInitData, static_cast<size_t>(strideInBytes) * numElements);
 }

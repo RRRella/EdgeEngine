@@ -39,12 +39,16 @@ void Renderer::UnregisterIBID(BufferID ibID)
 {
 	std::lock_guard lock(mFreeVBQueueMtx);
 
+	mIndexBuffers[ibID]->Release();
+
 	mFreeIBQueue.push(ibID);
 }
 
 void Renderer::UnregisterVBID(BufferID vbID)
 {
 	std::lock_guard lock(mFreeIBQueueMtx);
+
+	mVertexBuffers[vbID]->Release();
 
 	mFreeVBQueue.push(vbID);
 }
@@ -178,27 +182,29 @@ BufferID Renderer::CreateVertexBuffer(const FBufferDesc& desc)
 
 	std::lock_guard <std::mutex> lk(mMtxStaticVBHeap);
 
-	bool bSuccess = mStaticHeap_VertexBuffer.AllocVertexBuffer(desc.NumElements, desc.Stride, desc.pData, &vbv);
-	if (bSuccess)
+	if (!mFreeVBQueue.empty())
 	{
-		if (!mFreeVBQueue.empty())
-		{
-			std::lock_guard lock(mFreeVBQueueMtx);
+		std::lock_guard lock(mFreeVBQueueMtx);
 
-			Id = mFreeVBQueue.front();
+		Id = mFreeVBQueue.front();
 
-			mVBVs[Id] = vbv;
+		auto& vertexBuffer = mVertexBuffers[Id] = std::move(std::make_unique<VertexBuffer>(mDevice.GetDevicePtr(),true, mGFXQueue.pQueue));
+		vertexBuffer->Create(desc.NumElements, desc.Stride, desc.pData, &vbv,mDefaultHeapDesc);
 
-			mFreeVBQueue.pop();
-
-			return Id;
-		}
-
-		Id = LAST_USED_VBV_ID++;
 		mVBVs[Id] = vbv;
+
+		mFreeVBQueue.pop();
+
+		return Id;
 	}
-	else
-		Log::Error("Couldn't allocate vertex buffer");
+
+	Id = LAST_USED_VBV_ID++;
+
+	auto& vertexBuffer = mVertexBuffers[Id] = std::move(std::make_unique<VertexBuffer>(mDevice.GetDevicePtr(),true, mGFXQueue.pQueue));
+	vertexBuffer->Create(desc.NumElements, desc.Stride, desc.pData, &vbv, mDefaultHeapDesc);
+
+	mVBVs[Id] = vbv;
+
 	return Id;
 }
 BufferID Renderer::CreateIndexBuffer(const FBufferDesc& desc)
@@ -209,27 +215,29 @@ BufferID Renderer::CreateIndexBuffer(const FBufferDesc& desc)
 
 	std::lock_guard<std::mutex> lk(mMtxStaticIBHeap);
 
-	bool bSuccess = mStaticHeap_IndexBuffer.AllocIndexBuffer(desc.NumElements, desc.Stride, desc.pData, &ibv);
-	if (bSuccess)
+	if (!mFreeIBQueue.empty())
 	{
-		if (!mFreeIBQueue.empty())
-		{
-			std::lock_guard lock(mFreeIBQueueMtx);
+		std::lock_guard lock(mFreeIBQueueMtx);
 
-			Id = mFreeIBQueue.front();
+		Id = mFreeIBQueue.front();
 
-			mIBVs[Id] = ibv;
+		auto& indexBuffer = mIndexBuffers[Id] = std::move(std::make_unique<IndexBuffer>(mDevice.GetDevicePtr(),true, mGFXQueue.pQueue));
+		indexBuffer->Create(desc.NumElements, desc.Stride, desc.pData, &ibv, mDefaultHeapDesc);
 
-			mFreeIBQueue.pop();
-
-			return Id;
-		}
-
-		Id = LAST_USED_IBV_ID++;
 		mIBVs[Id] = ibv;
+
+		mFreeIBQueue.pop();
+
+		return Id;
 	}
-	else
-		Log::Error("Couldn't allocate index buffer");
+
+	Id = LAST_USED_IBV_ID++;
+
+	auto& indexBuffer = mIndexBuffers[Id] = std::move(std::make_unique<IndexBuffer>(mDevice.GetDevicePtr(),true, mGFXQueue.pQueue));
+	indexBuffer->Create(desc.NumElements, desc.Stride, desc.pData, &ibv, mDefaultHeapDesc);
+
+	mIBVs[Id] = ibv;
+
 	return Id;
 }
 BufferID Renderer::CreateConstantBuffer(const FBufferDesc& desc)

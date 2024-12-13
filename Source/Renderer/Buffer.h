@@ -212,8 +212,8 @@ public:
     void Create(ID3D12Device* device , const D3D12_HEAP_DESC& desc);
     void Destroy();
 
-    uint64_t Allocate(ID3D12Resource* resource, size_t size, size_t alignment);
-    uint64_t Allocate(ID3D12Resource* resource, size_t offset, size_t size, size_t alignment);
+    uint64_t Allocate(ID3D12Resource* resource, size_t size, size_t alignment, uint64_t& indexInHeap);
+    uint64_t Allocate(ID3D12Resource* resource, size_t offset, size_t size, size_t alignment, uint64_t& indexInHeap);
 
     bool IsAvailable(const uint64_t size) const { return size >= mRemSize; }
 
@@ -236,9 +236,14 @@ public:
 
     const D3D12_HEAP_DESC& GetDesc() const { return mDesc; }
 
+    ID3D12Heap1* GetHeap() { return mHeap; }
+
+    bool IsEmpty() const { return mOccupied.empty(); }
+
+    void RegisterResource(ID3D12Resource* resource, uint64_t index);
 private:
 
-    uint64_t SetResource(const size_t& offset, const size_t& size, std::list<BufferRegion>::iterator regionIt, ID3D12Resource* resource, uint64_t index);
+    uint64_t SetResource(const size_t& offset, const size_t& size, std::list<BufferRegion>::iterator regionIt);
 
     //void FindAliasedRange(std::pair<uint64_t, uint64_t>& aliasedRange, const std::list<ID3D12Resource*>& toAlias);
 
@@ -264,6 +269,7 @@ enum EBufferType
     CONSTANT_BUFFER,
     NUM_BUFFER_TYPES
 };
+
 struct FBufferDesc
 {
     EBufferType Type;
@@ -278,18 +284,22 @@ class Buffer
 public:
     void Release();
 
-    void UploadOnGPU(ID3D12CommandQueue* mCommndQueue , ID3D12GraphicsCommandList* pCmdList);
-
     virtual ~Buffer();
 
+    Buffer(Buffer&& other) = default;
+    Buffer& operator=(Buffer&& other) = default;
+
 protected:
-    Buffer(bool bUseVidMem) :mbUseVidMem(bUseVidMem) 
+    Buffer(ID3D12Device* pDevice,bool bUseVidMem, EBufferType type, ID3D12CommandQueue* commandQueue) :mpDevice(pDevice),mbUseVidMem(bUseVidMem) , mType(type)
     {
         mFence.Create(mpDevice, "Buffer Fence");
+        mCommndQueue = commandQueue;
     }
 
-    void AllocOnHeap(ID3D12Device* pDevice, D3D12_HEAP_DESC& desc);
+    void AllocOnHeap(const D3D12_HEAP_DESC& desc, uint64_t& indexInVidHeap, uint64_t& indexInSysHeap);
     void DeallocateFromHeap();
+    void AllocBuffer(uint32 numElements, uint32 strideInBytes, const void* pInitData, const D3D12_HEAP_DESC& desc);
+    void UploadOnGPU();
 
     std::mutex mMtx;
 
@@ -309,19 +319,31 @@ protected:
     uint64_t mVidOffsetInHeap = 0;
     uint64_t mSize = 0 ;
 
+    bool mbCreated = false;
     bool mbIsResident = false;
     bool mbUseVidMem = false;
 
     Fence mFence;
     uint64_t mFenceValue = 0;
+
+    ID3D12GraphicsCommandList* mCommandList = nullptr;
+    ID3D12CommandAllocator* mCommandAllocator = nullptr;
+    ID3D12CommandQueue* mCommndQueue = nullptr;
 };
 
 class VertexBuffer : public Buffer
 {
 public:
-    VertexBuffer(bool bUseVidMem) :Buffer(bUseVidMem) {}
+    VertexBuffer(ID3D12Device* pDevice, bool bUseVidMem, ID3D12CommandQueue* commandQueue) :Buffer(pDevice,bUseVidMem, EBufferType::VERTEX_BUFFER, commandQueue) {}
 
-    void Create(ID3D12Device* pDevice,uint32 numVertices, uint32 strideInBytes, const void* pInitData, D3D12_VERTEX_BUFFER_VIEW* pViewOut, D3D12_HEAP_DESC& desc);
+    VertexBuffer(VertexBuffer&& other) noexcept = default;
+    VertexBuffer& operator=(VertexBuffer&& other) noexcept = default;
+
+    VertexBuffer(const VertexBuffer& other) noexcept = delete;
+    VertexBuffer& operator=(const VertexBuffer& other) noexcept = delete;
+
+    //Duplicate code for now
+    void Create(uint32 numVertices, uint32 strideInBytes, const void* pInitData, D3D12_VERTEX_BUFFER_VIEW* pViewOut, const D3D12_HEAP_DESC& desc);
     
 private:
 
@@ -330,9 +352,16 @@ private:
 class IndexBuffer : public Buffer
 {
 public:
-    IndexBuffer(bool bUseVidMem) :Buffer(bUseVidMem) {}
+    IndexBuffer(ID3D12Device* pDevice, bool bUseVidMem, ID3D12CommandQueue* commandQueue) :Buffer(pDevice,bUseVidMem, EBufferType::INDEX_BUFFER, commandQueue) {}
 
-    void Create(ID3D12Device* pDevice,uint32 numIndices, uint32 strideInBytes, const void* pInitData, D3D12_INDEX_BUFFER_VIEW* pViewOut, D3D12_HEAP_DESC& desc);
+    IndexBuffer(IndexBuffer&& other) noexcept = default;
+    IndexBuffer& operator=(IndexBuffer&& other) noexcept = default;
+
+    IndexBuffer(const IndexBuffer& other) noexcept = delete;
+    IndexBuffer& operator=(const IndexBuffer& other) noexcept = delete;
+
+    //Duplicate code for now
+    void Create(uint32 numIndices, uint32 strideInBytes, const void* pInitData, D3D12_INDEX_BUFFER_VIEW* pViewOut, const D3D12_HEAP_DESC& desc);
 
 private:
 

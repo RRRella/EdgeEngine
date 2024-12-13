@@ -231,6 +231,16 @@ void Engine::RenderThread_DrawImguiWidgets()
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
+
+	//Setting
+	ImGui::Begin("Setting");
+
+	ImGui::SliderFloat("Dragging Sensitivity", &mMouseDragSensitivity, 0.5f, 5.0f);
+	ImGui::SliderFloat("Rotational Sensitivity", &mMouseRotSensitivity, 1.0f, 10.0f);
+
+	ImGui::End();
+
+	//Menu bar
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
@@ -244,8 +254,6 @@ void Engine::RenderThread_DrawImguiWidgets()
 
 					mBuiltinMeshNames[EBuiltInMeshes::OBJ_FILE] = "OBJ_File";
 					mBuiltinMeshes[EBuiltInMeshes::OBJ_FILE] = std::make_shared<Mesh>(&mRenderer, data.Vertices, data.Indices, mBuiltinMeshNames[EBuiltInMeshes::OBJ_FILE]);
-
-					mRenderer.Load();
 				}
 				else
 				{
@@ -472,6 +480,7 @@ HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 
 		const BufferID& VB_ID = VBIBIDs.first;
 		const BufferID& IB_ID = VBIBIDs.second;
+
 		const VBV& vb = mRenderer.GetVertexBufferView(VB_ID);
 		const IBV& ib = mRenderer.GetIndexBufferView(IB_ID);
 		ID3D12DescriptorHeap* ppHeaps[] = { mRenderer.GetDescHeap(EResourceHeapType::CBV_SRV_UAV_HEAP) };
