@@ -1,8 +1,4 @@
 # CMake generation dependency list for this directory.
-C:/Program Files/CMake/share/cmake-3.31/Modules/BasicConfigVersion-SameMajorVersion.cmake.in
-C:/Program Files/CMake/share/cmake-3.31/Modules/CMakePackageConfigHelpers.cmake
-C:/Program Files/CMake/share/cmake-3.31/Modules/GNUInstallDirs.cmake
-C:/Program Files/CMake/share/cmake-3.31/Modules/WriteBasicConfigVersionFile.cmake
 D:/Dev/Local/EdgeEngine/Libs/tinyobjloader/CMakeLists.txt
 D:/Dev/Local/EdgeEngine/Libs/tinyobjloader/cmake/sanitizers/FindASan.cmake
 D:/Dev/Local/EdgeEngine/Libs/tinyobjloader/cmake/sanitizers/FindMSan.cmake
@@ -13,3 +9,7 @@ D:/Dev/Local/EdgeEngine/Libs/tinyobjloader/cmake/sanitizers/sanitize-helpers.cma
 D:/Dev/Local/EdgeEngine/Libs/tinyobjloader/cmake_uninstall.cmake.in
 D:/Dev/Local/EdgeEngine/Libs/tinyobjloader/tinyobjloader-config.cmake.in
 D:/Dev/Local/EdgeEngine/Libs/tinyobjloader/tinyobjloader.pc.in
+D:/Program Files/CMake/share/cmake-3.31/Modules/BasicConfigVersion-SameMajorVersion.cmake.in
+D:/Program Files/CMake/share/cmake-3.31/Modules/CMakePackageConfigHelpers.cmake
+D:/Program Files/CMake/share/cmake-3.31/Modules/GNUInstallDirs.cmake
+D:/Program Files/CMake/share/cmake-3.31/Modules/WriteBasicConfigVersionFile.cmake

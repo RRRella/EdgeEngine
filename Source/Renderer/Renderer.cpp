@@ -143,7 +143,7 @@ void Renderer::Exit()
 		for (ID3D12CommandAllocator* pCmdAlloc : ctx.mCommandAllocatorsCompute) if (pCmdAlloc) pCmdAlloc->Release();
 		for (ID3D12CommandAllocator* pCmdAlloc : ctx.mCommandAllocatorsCopy)    if (pCmdAlloc) pCmdAlloc->Release();
 		ctx.mDynamicHeap_ConstantBuffer.Destroy();
-		ctx.SwapChain.Destroy(); // syncs GPU before releasing resources
+		ctx.mSwapChain.Destroy(); // syncs GPU before releasing resources
 		ctx.PresentQueue.Destroy();
 		if (ctx.pCmdList_GFX)
 			ctx.pCmdList_GFX->Release();
@@ -166,7 +166,7 @@ void Renderer::OnWindowSizeChanged(HWND hwnd, unsigned w, unsigned h)
 	ctx.MainRTResolutionY = h;
 }
 
-SwapChain& Renderer::GetWindowSwapChain(HWND hwnd) { return mRenderContextLookup.at(hwnd).SwapChain; }
+SwapChain& Renderer::GetWindowSwapChain(HWND hwnd) { return mRenderContextLookup.at(hwnd).mSwapChain; }
 
 short Renderer::GetSwapChainBackBufferCount(Window* pWnd) const { return pWnd ? this->GetSwapChainBackBufferCount(pWnd->GetHWND()) : 0; }
 short Renderer::GetSwapChainBackBufferCount(HWND hwnd) const
@@ -174,7 +174,15 @@ short Renderer::GetSwapChainBackBufferCount(HWND hwnd) const
 	if (!CheckContext(hwnd)) return 0;
 
 	const FWindowRenderContext& ctx = mRenderContextLookup.at(hwnd);
-	return ctx.SwapChain.GetNumBackBuffers();
+	return ctx.mSwapChain.GetNumBackBuffers();
+}
+
+short Renderer::GetSwapChainCurrentBackBufferIndex(HWND hwnd) const
+{
+	if (!CheckContext(hwnd)) return 0;
+
+	const FWindowRenderContext& ctx = mRenderContextLookup.at(hwnd);
+	return ctx.mSwapChain.GetCurrentBackBufferIndex();
 }
 
 void Renderer::InitializeRenderContext(FWindowRepresentation& WndDesc, int NumSwapchainBuffers)
@@ -193,7 +201,7 @@ void Renderer::InitializeRenderContext(FWindowRepresentation& WndDesc, int NumSw
 	swapChainDesc.pCmdQueue = &ctx.PresentQueue;
 	swapChainDesc.bVSync = ctx.bVsync;
 	swapChainDesc.bFullscreen = WndDesc.bFullscreen;
-	ctx.SwapChain.Create(swapChainDesc);
+	ctx.mSwapChain.Create(swapChainDesc);
 	// Create command allocators
 	ctx.mCommandAllocatorsGFX.resize(NumSwapchainBuffers);
 	ctx.mCommandAllocatorsCompute.resize(NumSwapchainBuffers);
@@ -292,13 +300,9 @@ void Renderer::InitializeHeaps()
 	const uint32 UPLOAD_HEAP_SIZE = 256 * MEGABYTE; // TODO: from RendererSettings.ini
 	mHeapUpload.Create(pDevice, UPLOAD_HEAP_SIZE);
 
-	constexpr uint32 NumDescsCBV = 10;
-	constexpr uint32 NumDescsSRV = 10;
-	constexpr uint32 NumDescsUAV = 10;
-	constexpr bool   bCPUVisible = false;
-	mHeapCBV_SRV_UAV.Create(pDevice, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, NumDescsCBV + NumDescsSRV + NumDescsUAV, bCPUVisible);
+	constexpr bool bCPUVisible = false;
+	mHeapCBV_SRV_UAV.Create(pDevice, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, bCPUVisible);
 	mHeapImguiSRV.Create(pDevice, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 100000, bCPUVisible);
-
 
 	constexpr uint32 NumDescsDSV = 10;
 	mHeapDSV.Create(pDevice, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, NumDescsDSV);

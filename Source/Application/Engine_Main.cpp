@@ -38,14 +38,13 @@ bool Engine::Initialize(const FStartupParameters& Params)
 	return true;
 }
 
-std::string Engine::OpenFile() const
+std::string Engine::OpenFile(const char* filter) const
 {
 	OPENFILENAMEA ofn;
 	char szFile[256];
 	szFile[0] = '\0';
 	char currentDir[256];
 	currentDir[0] = '\0';
-	const char* filter = "All(*.*)\0*.*\0Text(*.txt)\0*.txt\0OBJ(*.obj)\0*.obj";
 
 	std::memset(&ofn, 0, sizeof(ofn));
 

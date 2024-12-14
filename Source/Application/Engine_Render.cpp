@@ -119,6 +119,13 @@ void Engine::RenderThread_Inititalize()
 	const int H = bFullscreen ? mpWinMain->GetFullscreenHeight() : mpWinMain->GetHeight();
 	RenderThread_LoadWindowSizeDependentResources(mpWinMain->GetHWND(), W, H);
 
+	const std::string TextureFilePath = "Data/missing.jpg";
+	TextureID texID = mRenderer.CreateTextureFromFile(TextureFilePath.c_str());
+	SRV_ID    srvID = mRenderer.CreateAndInitializeSRV(texID);
+
+	for (int i = 0; i < mScene_MainWnd.mFrameData.size(); ++i)
+		mScene_MainWnd.mFrameData[i].SRVObjectTex = srvID;
+
 	RenderThread_Initialize_Imgui();
 }
 
@@ -197,7 +204,7 @@ void Engine::RenderThread_UnloadWindowSizeDependentResources(HWND hwnd)
 
 		// sync GPU
 		auto& ctx = mRenderer.GetWindowRenderContext(hwnd);
-		ctx.SwapChain.WaitForGPU();
+		ctx.mSwapChain.WaitForGPU();
 
 		mRenderer.DestroyTexture(r.Tex_MainViewDepth);
 	}
@@ -219,10 +226,10 @@ void Engine::RenderThread_Render()
 {
 	const int NUM_BACK_BUFFERS = mRenderer.GetSwapChainBackBufferCount(mpWinMain);
 	const int FRAME_DATA_INDEX  = mNumRenderLoopsExecuted % NUM_BACK_BUFFERS;
+	
+	RenderThread_DrawImguiWidgets();
 
 	RenderThread_RenderMainWindow();
-
-	RenderThread_DrawImguiWidgets();
 }
 
 void Engine::RenderThread_DrawImguiWidgets()
@@ -233,10 +240,12 @@ void Engine::RenderThread_DrawImguiWidgets()
 
 
 	//Setting
-	ImGui::Begin("Setting");
+	ImGui::Begin("Settings");
 
-	ImGui::SliderFloat("Dragging Sensitivity", &mMouseDragSensitivity, 0.5f, 5.0f);
-	ImGui::SliderFloat("Rotational Sensitivity", &mMouseRotSensitivity, 1.0f, 10.0f);
+	ImGui::DragFloat("Dragging Sensitivity", &mMouseDragSensitivity, 0.01f, 0.5f, 10.0f, "%.2f");
+	ImGui::DragFloat("Rotational Sensitivity", &mMouseRotSensitivity, 0.01f, 0.01f, 10.0f, "%.2f");
+	ImGui::DragFloat("Zoom Sensitivity", &mMouseZoomSensitivity, 0.01f, 1.0f, 10.0f, "%.2f");
+	ImGui::DragFloat("Scale", &mScale, 0.01f, 0.001f, 10.0f, "%.3f");
 
 	ImGui::End();
 
@@ -245,12 +254,14 @@ void Engine::RenderThread_DrawImguiWidgets()
 	{
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("Load File", "CTRL + O"))
+			if (ImGui::MenuItem("Load Mesh"))
 			{
 				if (!mBuiltinMeshes[EBuiltInMeshes::OBJ_FILE])
 				{
+					const char* filter = "OBJ(*.obj)\0*.obj";
+
 					GeometryGenerator::GeometryData<FVertexWithNormal> data;
-					GeometryGenerator::LoadObjFromFile<FVertexWithNormal>(OpenFile(), data);
+					GeometryGenerator::LoadObjFromFile<FVertexWithNormal>(OpenFile(filter), data);
 
 					mBuiltinMeshNames[EBuiltInMeshes::OBJ_FILE] = "OBJ_File";
 					mBuiltinMeshes[EBuiltInMeshes::OBJ_FILE] = std::make_shared<Mesh>(&mRenderer, data.Vertices, data.Indices, mBuiltinMeshNames[EBuiltInMeshes::OBJ_FILE]);
@@ -259,6 +270,19 @@ void Engine::RenderThread_DrawImguiWidgets()
 				{
 					Log::Warning("Clear the current mesh then load another");
 				}
+			}
+			if (ImGui::MenuItem("Change Texture"))
+			{
+				const char* filter = "Image Files (*.jpg;*.png)\0*.jpg;*.png";
+
+				const std::string TextureFilePath = OpenFile(filter);
+				TextureID texID = mRenderer.CreateTextureFromFile(TextureFilePath.c_str());
+				SRV_ID    srvID = mRenderer.CreateAndInitializeSRV(texID);
+
+				for (int i = 0; i < mScene_MainWnd.mFrameData.size(); ++i)
+					mScene_MainWnd.mFrameData[i].SRVObjectTex = srvID;
+
+				mRenderer.SetStallTexture(mRenderer.GetSwapChainCurrentBackBufferIndex(mpWinMain->GetHWND()) , texID - 1);
 			}
 			if (ImGui::MenuItem("Clear"))
 			{
@@ -281,9 +305,7 @@ void Engine::RenderThread_RenderMainWindow()
 	HRESULT hr = S_OK;
 
 	FWindowRenderContext& ctx = mRenderer.GetWindowRenderContext(mpWinMain->GetHWND());
-	hr = mbLoadingLevel
-		? RenderThread_RenderMainWindow_LoadingScreen(ctx)
-		: RenderThread_RenderMainWindow_Scene(ctx);
+	hr = RenderThread_RenderMainWindow_Scene(ctx);
 
 	// TODO: remove copy paste and use encapsulation of context rendering properly
 	// currently check only for hr0 for the mainWindow
@@ -298,108 +320,108 @@ void Engine::RenderThread_RenderMainWindow()
 }
 
 
-HRESULT Engine::RenderThread_RenderMainWindow_LoadingScreen(FWindowRenderContext& ctx)
-{
-	HRESULT hr = S_OK;
-	const int NUM_BACK_BUFFERS = ctx.SwapChain.GetNumBackBuffers();
-	const int BACK_BUFFER_INDEX = ctx.SwapChain.GetCurrentBackBufferIndex();
-	const int FRAME_DATA_INDEX = mNumRenderLoopsExecuted % NUM_BACK_BUFFERS;
-	assert(mScene_MainWnd.mLoadingScreenData.size() > 0);
-	const FLoadingScreenData& FrameData = mScene_MainWnd.mLoadingScreenData[FRAME_DATA_INDEX];
-	assert(ctx.mCommandAllocatorsGFX.size() >= NUM_BACK_BUFFERS);
-	// ----------------------------------------------------------------------------
-
-	//
-	// PRE RENDER
-	//
-	// Command list allocators can only be reset when the associated 
-	// command lists have finished execution on the GPU; apps should use 
-	// fences to determine GPU execution progress.
-	ID3D12CommandAllocator* pCmdAlloc = ctx.mCommandAllocatorsGFX[BACK_BUFFER_INDEX];
-	ThrowIfFailed(pCmdAlloc->Reset());
-
-	// However, when ExecuteCommandList() is called on a particular command 
-	// list, that command list can then be reset at any time and must be before 
-	// re-recording.
-	ID3D12PipelineState* pInitialState = nullptr;
-	ThrowIfFailed(ctx.pCmdList_GFX->Reset(pCmdAlloc, pInitialState));
-
-	//
-	// RENDER
-	//
-	ID3D12GraphicsCommandList* pCmd = ctx.pCmdList_GFX;
-
-	// Transition SwapChain RT
-	ID3D12Resource* pSwapChainRT = ctx.SwapChain.GetCurrentBackBufferRenderTarget();
-	pCmd->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pSwapChainRT
-		, D3D12_RESOURCE_STATE_PRESENT
-		, D3D12_RESOURCE_STATE_RENDER_TARGET)
-	);
-
-	// Clear RT
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle = ctx.SwapChain.GetCurrentBackBufferRTVHandle();
-	const float clearColor[] =
-	{
-		FrameData.SwapChainClearColor[0],
-		FrameData.SwapChainClearColor[1],
-		FrameData.SwapChainClearColor[2],
-		FrameData.SwapChainClearColor[3]
-	};
-	pCmd->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-
-	// Draw Triangle
-	const float           RenderResolutionX = static_cast<float>(ctx.MainRTResolutionX);
-	const float           RenderResolutionY = static_cast<float>(ctx.MainRTResolutionY);
-	D3D12_VIEWPORT        viewport          { 0.0f, 0.0f, RenderResolutionX, RenderResolutionY, 0.0f, 1.0f };
-	const auto            VBIBIDs           = mBuiltinMeshes[EBuiltInMeshes::TRIANGLE]->GetIABufferIDs();
-	const BufferID&       IB_ID             = VBIBIDs.second;
-	const IBV&            ib                = mRenderer.GetIndexBufferView(IB_ID);
-	ID3D12DescriptorHeap* ppHeaps[]         = { mRenderer.GetDescHeap(EResourceHeapType::CBV_SRV_UAV_HEAP) };
-	D3D12_RECT            scissorsRect      { 0, 0, (LONG)RenderResolutionX, (LONG)RenderResolutionY };
-
-	pCmd->OMSetRenderTargets(1, &rtvHandle, FALSE, NULL);
-
-	pCmd->SetPipelineState(mRenderer.GetPSO(EBuiltinPSOs::LOADING_SCREEN_PSO));
-
-	// hardcoded roog signature for now until shader reflection and rootsignature management is implemented
-	pCmd->SetGraphicsRootSignature(mRenderer.GetRootSignature(1));
-
-	pCmd->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-	pCmd->SetGraphicsRootDescriptorTable(0, mRenderer.GetShaderResourceView(FrameData.SRVLoadingScreen).GetGPUDescHandle());
-
-	pCmd->RSSetViewports(1, &viewport);
-	pCmd->RSSetScissorRects(1, &scissorsRect);
-
-	pCmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	pCmd->IASetVertexBuffers(0, 1, NULL);
-	pCmd->IASetIndexBuffer(&ib);
-
-	pCmd->DrawIndexedInstanced(3, 1, 0, 0, 0);
-
-	pCmd->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pSwapChainRT
-		, D3D12_RESOURCE_STATE_RENDER_TARGET
-		, D3D12_RESOURCE_STATE_PRESENT)
-	); // Transition SwapChain for Present
-
-	pCmd->Close();
-
-	ID3D12CommandList* ppCommandLists[] = { ctx.pCmdList_GFX };
-	ctx.PresentQueue.pQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-
-	//
-	// PRESENT
-	//
-	hr = ctx.SwapChain.Present(ctx.bVsync);
-	ctx.SwapChain.MoveToNextFrame();
-	return hr;
-}
+//HRESULT Engine::RenderThread_RenderMainWindow_LoadingScreen(FWindowRenderContext& ctx)
+//{
+//	HRESULT hr = S_OK;
+//	const int NUM_BACK_BUFFERS = ctx.SwapChain.GetNumBackBuffers();
+//	const int BACK_BUFFER_INDEX = ctx.SwapChain.GetCurrentBackBufferIndex();
+//	const int FRAME_DATA_INDEX = mNumRenderLoopsExecuted % NUM_BACK_BUFFERS;
+//	assert(mScene_MainWnd.mLoadingScreenData.size() > 0);
+//	const FLoadingScreenData& FrameData = mScene_MainWnd.mLoadingScreenData[FRAME_DATA_INDEX];
+//	assert(ctx.mCommandAllocatorsGFX.size() >= NUM_BACK_BUFFERS);
+//	// ----------------------------------------------------------------------------
+//
+//	//
+//	// PRE RENDER
+//	//
+//	// Command list allocators can only be reset when the associated 
+//	// command lists have finished execution on the GPU; apps should use 
+//	// fences to determine GPU execution progress.
+//	ID3D12CommandAllocator* pCmdAlloc = ctx.mCommandAllocatorsGFX[BACK_BUFFER_INDEX];
+//	ThrowIfFailed(pCmdAlloc->Reset());
+//
+//	// However, when ExecuteCommandList() is called on a particular command 
+//	// list, that command list can then be reset at any time and must be before 
+//	// re-recording.
+//	ID3D12PipelineState* pInitialState = nullptr;
+//	ThrowIfFailed(ctx.pCmdList_GFX->Reset(pCmdAlloc, pInitialState));
+//
+//	//
+//	// RENDER
+//	//
+//	ID3D12GraphicsCommandList* pCmd = ctx.pCmdList_GFX;
+//
+//	// Transition SwapChain RT
+//	ID3D12Resource* pSwapChainRT = ctx.SwapChain.GetCurrentBackBufferRenderTarget();
+//	pCmd->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pSwapChainRT
+//		, D3D12_RESOURCE_STATE_PRESENT
+//		, D3D12_RESOURCE_STATE_RENDER_TARGET)
+//	);
+//
+//	// Clear RT
+//	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle = ctx.SwapChain.GetCurrentBackBufferRTVHandle();
+//	const float clearColor[] =
+//	{
+//		FrameData.SwapChainClearColor[0],
+//		FrameData.SwapChainClearColor[1],
+//		FrameData.SwapChainClearColor[2],
+//		FrameData.SwapChainClearColor[3]
+//	};
+//	pCmd->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+//
+//	// Draw Triangle
+//	const float           RenderResolutionX = static_cast<float>(ctx.MainRTResolutionX);
+//	const float           RenderResolutionY = static_cast<float>(ctx.MainRTResolutionY);
+//	D3D12_VIEWPORT        viewport          { 0.0f, 0.0f, RenderResolutionX, RenderResolutionY, 0.0f, 1.0f };
+//	const auto            VBIBIDs           = mBuiltinMeshes[EBuiltInMeshes::TRIANGLE]->GetIABufferIDs();
+//	const BufferID&       IB_ID             = VBIBIDs.second;
+//	const IBV&            ib                = mRenderer.GetIndexBufferView(IB_ID);
+//	ID3D12DescriptorHeap* ppHeaps[]         = { mRenderer.GetDescHeap(EResourceHeapType::CBV_SRV_UAV_HEAP) };
+//	D3D12_RECT            scissorsRect      { 0, 0, (LONG)RenderResolutionX, (LONG)RenderResolutionY };
+//
+//	pCmd->OMSetRenderTargets(1, &rtvHandle, FALSE, NULL);
+//
+//	pCmd->SetPipelineState(mRenderer.GetPSO(EBuiltinPSOs::LOADING_SCREEN_PSO));
+//
+//	// hardcoded roog signature for now until shader reflection and rootsignature management is implemented
+//	pCmd->SetGraphicsRootSignature(mRenderer.GetRootSignature(1));
+//
+//	pCmd->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+//	pCmd->SetGraphicsRootDescriptorTable(0, mRenderer.GetShaderResourceView(FrameData.SRVLoadingScreen).GetGPUDescHandle());
+//
+//	pCmd->RSSetViewports(1, &viewport);
+//	pCmd->RSSetScissorRects(1, &scissorsRect);
+//
+//	pCmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+//	pCmd->IASetVertexBuffers(0, 1, NULL);
+//	pCmd->IASetIndexBuffer(&ib);
+//
+//	pCmd->DrawIndexedInstanced(3, 1, 0, 0, 0);
+//
+//	pCmd->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pSwapChainRT
+//		, D3D12_RESOURCE_STATE_RENDER_TARGET
+//		, D3D12_RESOURCE_STATE_PRESENT)
+//	); // Transition SwapChain for Present
+//
+//	pCmd->Close();
+//
+//	ID3D12CommandList* ppCommandLists[] = { ctx.pCmdList_GFX };
+//	ctx.PresentQueue.pQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+//
+//
+//	//
+//	// PRESENT
+//	//
+//	hr = ctx.SwapChain.Present(ctx.bVsync);
+//	ctx.SwapChain.MoveToNextFrame();
+//	return hr;
+//}
 
 HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 {
 	HRESULT hr = S_OK;
-	const int NUM_BACK_BUFFERS = ctx.SwapChain.GetNumBackBuffers();
-	const int BACK_BUFFER_INDEX = ctx.SwapChain.GetCurrentBackBufferIndex();
+	const int NUM_BACK_BUFFERS = ctx.mSwapChain.GetNumBackBuffers();
+	const int BACK_BUFFER_INDEX = ctx.mSwapChain.GetCurrentBackBufferIndex();
 	const int FRAME_DATA_INDEX = mNumRenderLoopsExecuted % NUM_BACK_BUFFERS;
 	const FFrameData& FrameData = mScene_MainWnd.mFrameData[FRAME_DATA_INDEX];
 	assert(ctx.mCommandAllocatorsGFX.size() >= NUM_BACK_BUFFERS);
@@ -432,7 +454,7 @@ HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 	//
 
 	// Transition SwapChain RT
-	ID3D12Resource* pSwapChainRT = ctx.SwapChain.GetCurrentBackBufferRenderTarget();
+	ID3D12Resource* pSwapChainRT = ctx.mSwapChain.GetCurrentBackBufferRenderTarget();
 	CD3DX12_RESOURCE_BARRIER barriers[] =
 	{
 		  CD3DX12_RESOURCE_BARRIER::Transition(pSwapChainRT, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET)
@@ -442,7 +464,7 @@ HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 
 
 	// Clear RT
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle = ctx.SwapChain.GetCurrentBackBufferRTVHandle();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle = ctx.mSwapChain.GetCurrentBackBufferRTVHandle();
 	D3D12_CPU_DESCRIPTOR_HANDLE   dsvHandle = mRenderer.GetDSV(mResources_MainWnd.DSV_MainViewDepth).GetCPUDescHandle();
 	D3D12_CLEAR_FLAGS DSVClearFlags = D3D12_CLEAR_FLAGS::D3D12_CLEAR_FLAG_DEPTH;
 	const float clearColor[] =
@@ -539,8 +561,11 @@ HRESULT Engine::RenderThread_RenderMainWindow_Scene(FWindowRenderContext& ctx)
 	//
 	// PRESENT
 	//
-	hr = ctx.SwapChain.Present(ctx.bVsync);
-	ctx.SwapChain.MoveToNextFrame();
+	hr = ctx.mSwapChain.Present(ctx.bVsync);
+	ctx.mSwapChain.MoveToNextFrame();
+
+	mRenderer.ReleaseStallTexture(ctx.mSwapChain.GetCurrentBackBufferIndex());
+
 	return hr;
 }
 

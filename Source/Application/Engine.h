@@ -38,7 +38,7 @@ public:
 	virtual void Update() = 0;
 
 	std::vector<FFrameData> mFrameData;
-	std::vector<FLoadingScreenData> mLoadingScreenData;
+	//std::vector<FLoadingScreenData> mLoadingScreenData;
 
 protected:
 	HWND hwnd;
@@ -157,7 +157,7 @@ public:
 	inline const std::string&  GetWindowName(const Window* pWin) const { return GetWindowName(pWin->GetHWND()); }
 private:
 	//currently getting used for opening a mesh only, not a clean code
-	std::string OpenFile() const;
+	std::string OpenFile(const char* filter) const;
 
 	//-------------------------------------------------------------------------------------------------
 	using BuiltinMeshArray_t = std::array<std::shared_ptr<Mesh>, EBuiltInMeshes::NUM_BUILTIN_MESHES>;
@@ -235,7 +235,9 @@ private:
 	std::unordered_map<HWND, bool>  mInitialSwapchainResizeRequiredWindowLookup;
 
 	float mMouseDragSensitivity = 0.5f;
-	float mMouseRotSensitivity = 1.0f;
+	float mMouseRotSensitivity = 0.1f;
+	float mMouseZoomSensitivity = 0.5f;
+	float mScale = 1.0f;
 private:
 	void                            InitializeEngineSettings(const FStartupParameters& Params);
 	void                            InitializeWindows(const FStartupParameters& Params);

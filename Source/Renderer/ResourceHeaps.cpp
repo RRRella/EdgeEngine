@@ -40,7 +40,7 @@ void StaticResourceViewHeap::Destroy()
     mpHeap->Release();
 }
 
-bool StaticResourceViewHeap::AllocDescriptor(uint32 size, ResourceView* pRV)
+uint32 StaticResourceViewHeap::AllocDescriptor(uint32 size, ResourceView* pRV)
 {
     if ((mIndex + size) > mDescriptorCount)
     {
@@ -54,11 +54,13 @@ bool StaticResourceViewHeap::AllocDescriptor(uint32 size, ResourceView* pRV)
     D3D12_GPU_DESCRIPTOR_HANDLE GPUView = mpHeap->GetGPUDescriptorHandleForHeapStart();
     GPUView.ptr += mIndex * mDescriptorElementSize;
 
+    auto index = mIndex;
+
     mIndex += size;
 
     pRV->SetResourceView(size, mDescriptorElementSize, CPUView, GPUView);
 
-    return true;
+    return index;
 }
 
 

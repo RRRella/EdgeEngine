@@ -75,7 +75,7 @@ void Engine::UpdateThread_Inititalize()
 	while (!mbRenderThreadInitialized); 
 
 	// immediately load loading screen texture
-	LoadLoadingScreenData();
+	//LoadLoadingScreenData();
 
 	mTimer.Reset();
 	mTimer.Start();
@@ -230,6 +230,8 @@ void Engine::UpdateThread_UpdateScene(const float dt)
 	constexpr float CAMERA_MOVEMENT_SPEED_MULTIPLER = 0.75f;
 	XMVECTOR LocalSpaceTranslation = XMVectorSet(0, 0, 0, 0);
 
+	FrameData.TFCube.SetScale(XMVECTOR{mScale,mScale ,mScale});
+
 	if (input.IsKeyDown(KeyCode::LeftAlt))
 	{
 		if (input.IsMouseDown(MOUSE_BUTTON_RIGHT))
@@ -245,7 +247,7 @@ void Engine::UpdateThread_UpdateScene(const float dt)
 		}
 		if (input.IsMouseScrollDown() || input.IsMouseScrollUp())
 		{
-			LocalSpaceTranslation += XMVECTOR{ 0.0f,0.0f,1.0f } * input.GetMouseScroll() * 0.5;
+			LocalSpaceTranslation += XMVECTOR{ 0.0f,0.0f,1.0f } * input.GetMouseScroll() * mMouseZoomSensitivity;
 		}
 	}
 	
@@ -317,12 +319,7 @@ void Engine::Load_SceneData_Dispatch()
 		CameraData camData = GenerateCameraInitializationParameters(mpWinMain);
 		data.SceneCamera.InitializeCamera(camData);
 
-		const std::string TextureFilePath = "Data/Textures/Skull.jpg";
-		TextureID texID = mRenderer.CreateTextureFromFile(TextureFilePath.c_str());
-		SRV_ID    srvID = mRenderer.CreateAndInitializeSRV(texID);
-		data.SRVObjectTex = srvID;
-
-		mScene_MainWnd.mFrameData.resize(NumBackBuffer_WndMain, data);
+		mScene_MainWnd.mFrameData.resize(NumBackBuffer_WndMain,data);
 
 		mWindowUpdateContextLookup[mpWinMain->GetHWND()] = &mScene_MainWnd;
 	});
@@ -333,18 +330,18 @@ void Engine::Load_SceneData_Join()
 }
 
 
-void Engine::LoadLoadingScreenData()
-{
-	FLoadingScreenData data;
-
-	data.SwapChainClearColor = { 0.0f, 0.2f, 0.4f, 1.0f };
-
-	const std::string LoadingScreenTextureFilePath = "Data/Textures/0.png";
-	TextureID texID = mRenderer.CreateTextureFromFile(LoadingScreenTextureFilePath.c_str());
-	SRV_ID    srvID = mRenderer.CreateAndInitializeSRV(texID);
-	data.SRVLoadingScreen = srvID;
-
-	const int NumBackBuffer_WndMain = mRenderer.GetSwapChainBackBufferCount(mpWinMain);
-	mScene_MainWnd.mLoadingScreenData.resize(NumBackBuffer_WndMain, data);
-}
+//void Engine::LoadLoadingScreenData()
+//{
+//	FLoadingScreenData data;
+//
+//	data.SwapChainClearColor = { 0.0f, 0.2f, 0.4f, 1.0f };
+//
+//	const std::string LoadingScreenTextureFilePath = "Data/Textures/0.png";
+//	TextureID texID = mRenderer.CreateTextureFromFile(LoadingScreenTextureFilePath.c_str());
+//	SRV_ID    srvID = mRenderer.CreateAndInitializeSRV(texID);
+//	data.SRVLoadingScreen = srvID;
+//
+//	const int NumBackBuffer_WndMain = mRenderer.GetSwapChainBackBufferCount(mpWinMain);
+//	mScene_MainWnd.mLoadingScreenData.resize(NumBackBuffer_WndMain, data);
+//}
 

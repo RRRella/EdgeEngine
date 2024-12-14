@@ -79,7 +79,7 @@ TextureID Renderer::CreateTextureFromFile(const char* pFilePath)
 	// It's recommended to create heaps on background threads to avoid glitching the render 
 	// thread. In D3D12, multiple threads may safely call create routines concurrently.
 	UploadHeap uploadHeap;
-	uploadHeap.Create(mDevice.GetDevicePtr(), 32 * MEGABYTE); // TODO: drive the heapsize through RendererSettings.ini
+	uploadHeap.Create(mDevice.GetDevicePtr(), 256 * MEGABYTE); // TODO: drive the heapsize through RendererSettings.ini
 
 	TextureCreateDesc tDesc(DirectoryUtil::GetFileNameFromPath(pFilePath));
 	tDesc.pAllocator = mpAllocator;
@@ -128,7 +128,7 @@ SRV_ID Renderer::CreateAndInitializeSRV(TextureID texID)
 	{
 		std::lock_guard<std::mutex> lk(mMtxSRVs);
 
-		mHeapCBV_SRV_UAV.AllocDescriptor(1, &SRV);
+		auto index = mHeapCBV_SRV_UAV.AllocDescriptor(1, &SRV);
 		mTextures[texID].InitializeSRV(0, &SRV);
 		Id = LAST_USED_SRV_ID++;
 		mSRVs[Id] = SRV;
@@ -292,6 +292,26 @@ void Renderer::DestroyTexture(TextureID texID)
 	std::lock_guard<std::mutex> lk(mMtxTextures);
 	mTextures.at(texID).Destroy();
 	mTextures.erase(texID);
+}
+void Renderer::ReleaseStallTexture(uint64_t backBufferIndex)
+{
+	std::lock_guard<std::mutex> lk(mMtxTextures);
+
+	if (mStallTexture)
+	{
+		if (backBufferIndex == mStallTexture->fenceValue)
+		{
+			mTextures.at(mStallTexture->texID).Destroy();
+			mTextures.erase(mStallTexture->texID);
+			mStallTexture.reset();
+		}
+	}
+}
+void Renderer::SetStallTexture(uint64_t backBufferIndex, TextureID texID)
+{
+	StallTexture stallTexture = { backBufferIndex, texID };
+
+	mStallTexture = std::make_unique<StallTexture>(stallTexture);
 }
 void Renderer::DestroySRV(SRV_ID srvID)
 {

@@ -50,7 +50,7 @@ struct FRendererInitializeParameters
 struct FWindowRenderContext
 {
 	Device*      pDevice = nullptr;
-	SwapChain    SwapChain;
+	SwapChain    mSwapChain;
 	CommandQueue PresentQueue;
 
 	std::vector<ID3D12CommandAllocator*> mCommandAllocatorsGFX;
@@ -99,6 +99,7 @@ public:
 	inline short                 GetSwapChainBackBufferCount(std::unique_ptr<Window>& pWnd) const { return GetSwapChainBackBufferCount(pWnd.get()); };
 	short                        GetSwapChainBackBufferCount(Window* pWnd) const;
 	short                        GetSwapChainBackBufferCount(HWND hwnd) const;
+	short                        GetSwapChainCurrentBackBufferIndex(HWND hwnd) const;
 	SwapChain&                   GetWindowSwapChain(HWND hwnd);
 	FWindowRenderContext&        GetWindowRenderContext(HWND hwnd);
 
@@ -114,7 +115,8 @@ public:
 	void                         InitializeDSV(DSV_ID dsvID, uint heapIndex, TextureID texID);
 	void                         InitializeSRV(SRV_ID srvID, uint heapIndex, TextureID texID);
 
-	void                         DestroyTexture(TextureID texID);
+	void                         ReleaseStallTexture(uint64_t backBufferIndex);
+	void						 DestroyTexture(TextureID texID);
 	void                         DestroySRV(SRV_ID srvID);
 	void                         DestroyDSV(DSV_ID dsvID);
 
@@ -149,7 +151,16 @@ public:
 
 	VertexBuffer* GetVertexBuffer(BufferID id) { return mVertexBuffers[id].get(); }
 	IndexBuffer*  GetIndexBuffer(BufferID id) { return mIndexBuffers[id].get(); }
+
+	void SetStallTexture(uint64_t backBufferIndex, TextureID texID);
+
 private:
+	struct StallTexture
+	{
+		uint64_t fenceValue;
+		TextureID texID;
+	};
+
 	using PSOArray_t           = std::array<ID3D12PipelineState*, EBuiltinPSOs::NUM_BUILTIN_PSOs>;
 
 	// GPU
@@ -174,6 +185,7 @@ private:
 
 	// resources & views
 	std::unordered_map<TextureID, Texture>         mTextures;
+	std::unique_ptr<StallTexture>				   mStallTexture;
 	std::unordered_map<SamplerID, SAMPLER>         mSamplers;
 	std::unordered_map<BufferID, VBV>              mVBVs;
 	std::unordered_map<BufferID, IBV>              mIBVs;

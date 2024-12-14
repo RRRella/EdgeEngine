@@ -261,8 +261,7 @@ void Window::SetMouseCapture(bool bCapture)
         rcClip.bottom -= PX_OFFSET;
 
         // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showcursor
-        int hr = ShowCursor(FALSE);
-        while (hr >= 0) hr = ShowCursor(FALSE);
+        int hr = ShowCursor(TRUE);
         switch (hr)
         {
         case -1: Log::Warning("ShowCursor(FALSE): No mouse is installed!"); break;

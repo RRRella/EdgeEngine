@@ -231,7 +231,7 @@
       <UseUtf8Encoding>Always</UseUtf8Encoding>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/Dev/Local/EdgeEngine/Source/Renderer/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SD:/Dev/Local/EdgeEngine -BD:/Dev/Local/EdgeEngine/build --check-stamp-file D:/Dev/Local/EdgeEngine/build/Source/Renderer/CMakeFiles/generate.stamp
+"D:\Program Files\CMake\bin\cmake.exe" -SD:/Dev/Local/EdgeEngine -BD:/Dev/Local/EdgeEngine/build --check-stamp-file D:/Dev/Local/EdgeEngine/build/Source/Renderer/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -244,7 +244,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/Dev/Local/EdgeEngine/Source/Renderer/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SD:/Dev/Local/EdgeEngine -BD:/Dev/Local/EdgeEngine/build --check-stamp-file D:/Dev/Local/EdgeEngine/build/Source/Renderer/CMakeFiles/generate.stamp
+"D:\Program Files\CMake\bin\cmake.exe" -SD:/Dev/Local/EdgeEngine -BD:/Dev/Local/EdgeEngine/build --check-stamp-file D:/Dev/Local/EdgeEngine/build/Source/Renderer/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -257,7 +257,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/Dev/Local/EdgeEngine/Source/Renderer/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SD:/Dev/Local/EdgeEngine -BD:/Dev/Local/EdgeEngine/build --check-stamp-file D:/Dev/Local/EdgeEngine/build/Source/Renderer/CMakeFiles/generate.stamp
+"D:\Program Files\CMake\bin\cmake.exe" -SD:/Dev/Local/EdgeEngine -BD:/Dev/Local/EdgeEngine/build --check-stamp-file D:/Dev/Local/EdgeEngine/build/Source/Renderer/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -270,7 +270,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/Dev/Local/EdgeEngine/Source/Renderer/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SD:/Dev/Local/EdgeEngine -BD:/Dev/Local/EdgeEngine/build --check-stamp-file D:/Dev/Local/EdgeEngine/build/Source/Renderer/CMakeFiles/generate.stamp
+"D:\Program Files\CMake\bin\cmake.exe" -SD:/Dev/Local/EdgeEngine -BD:/Dev/Local/EdgeEngine/build --check-stamp-file D:/Dev/Local/EdgeEngine/build/Source/Renderer/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone

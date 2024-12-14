@@ -21,7 +21,7 @@ class StaticResourceViewHeap
 public:
     void Create(ID3D12Device* pDevice, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 descriptorCount, bool forceCPUVisible = false);
     void Destroy();
-    bool AllocDescriptor(uint32 size, ResourceView* pRV);
+    uint32 AllocDescriptor(uint32 size, ResourceView* pRV);
     
 
     inline ID3D12DescriptorHeap* GetHeap() { return mpHeap; }
