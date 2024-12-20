@@ -27,27 +27,30 @@ Camera::~Camera(void)
 
 void Camera::InitializeCamera(const CameraData& data)
 {
-	const auto& NEAR_PLANE = data.nearPlane;
-	const auto& FAR_PLANE = data.farPlane;
-	const float AspectRatio = data.width / data.height;
-	const float VerticalFoV = data.fovV_Degrees * DEG2RAD;
-	const float& ViewportX = data.width;
-	const float& ViewportY = data.height;
+	if (!mIsInitialized)
+	{
+		const auto& NEAR_PLANE = data.nearPlane;
+		const auto& FAR_PLANE = data.farPlane;
+		const float AspectRatio = data.width / data.height;
+		const float VerticalFoV = data.fovV_Degrees * DEG2RAD;
+		const float& ViewportX = data.width;
+		const float& ViewportY = data.height;
 
-	this->mProjParams.NearZ = NEAR_PLANE;
-	this->mProjParams.FarZ = FAR_PLANE;
-	this->mProjParams.ViewporHeight = ViewportY;
-	this->mProjParams.ViewporWidth = ViewportX;
-	this->mProjParams.FieldOfView = data.fovV_Degrees * DEG2RAD;
-	this->mProjParams.bPerspectiveProjection = data.bPerspectiveProjection;
+		this->mProjParams.NearZ = NEAR_PLANE;
+		this->mProjParams.FarZ = FAR_PLANE;
+		this->mProjParams.ViewporHeight = ViewportY;
+		this->mProjParams.ViewporWidth = ViewportX;
+		this->mProjParams.FieldOfView = data.fovV_Degrees * DEG2RAD;
+		this->mProjParams.bPerspectiveProjection = data.bPerspectiveProjection;
 
-	SetProjectionMatrix(this->mProjParams);
+		SetProjectionMatrix(this->mProjParams);
 
-	SetPosition(data.x, data.y, data.z);
-	mYaw = mPitch = 0;
-	Rotate(data.yaw * DEG2RAD, data.pitch * DEG2RAD, 1.0f);
+		SetPosition(data.x, data.y, data.z);
+		mYaw = mPitch = 0;
+		Rotate(data.yaw * DEG2RAD, data.pitch * DEG2RAD, 1.0f);
 
-	mIsInitialized = true;
+		mIsInitialized = true;
+	}
 }
 
 void Camera::SetProjectionMatrix(const ProjectionMatrixParameters& params)
@@ -133,7 +136,24 @@ void Camera::Rotate(float yaw, float pitch, const float dt)
 	mQuat = XMQuaternionRotationRollPitchYawFromVector({ mPitch, mYaw, 0.0f });
 	mQuat = XMQuaternionNormalize(mQuat);
 }
-void Camera::Reset() {}
+void Camera::Reset() 
+{
+	mPosition = { 0.0f,0.0f,0.0f };
+
+	mVelocity = { 0.0f,0.0f,0.0f };
+
+	mYaw = 0.0f;
+	mPitch = 0.0f;
+
+	mProjParams = {};
+
+	XMStoreFloat4x4(&mMatProj, XMMatrixIdentity());
+	XMStoreFloat4x4(&mMatView, XMMatrixIdentity());
+
+	mQuat = DirectX::XMVECTOR{ 0.0f,0.0f,0.0f,1.0f };
+
+	mIsInitialized = false;
+}
 void Camera::Rotate(const float dt, const CameraInput& input)
 {
 	float dy = input.DeltaMouseXY[1];

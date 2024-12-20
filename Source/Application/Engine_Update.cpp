@@ -147,6 +147,22 @@ bool Engine::IsWindowRegistered(HWND hwnd) const
 	return it != mWinNameLookup.end();
 }
 
+void Engine::SetObjectDefaultRotation(FFrameData& data)
+{
+	constexpr XMFLOAT3 CUBE_ROTATION_VECTOR = XMFLOAT3(-1, 0, 0);
+	constexpr float    CUBE_ROTATION_DEGREES = 90.0f;
+	const XMVECTOR     CUBE_ROTATION_AXIS = XMVector3Normalize(XMLoadFloat3(&CUBE_ROTATION_VECTOR));
+	XMVECTOR q = XMQuaternionRotationAxis(CUBE_ROTATION_AXIS, CUBE_ROTATION_DEGREES * DEG2RAD);
+
+	constexpr XMFLOAT3 CUBE_ROTATION_VECTOR1 = XMFLOAT3(0, -1, 0);
+	constexpr float    CUBE_ROTATION_DEGREES1 = 180.0f;
+	const XMVECTOR     CUBE_ROTATION_AXIS1 = XMVector3Normalize(XMLoadFloat3(&CUBE_ROTATION_VECTOR1));
+
+	XMVECTOR q1 = XMQuaternionRotationAxis(CUBE_ROTATION_AXIS1, CUBE_ROTATION_DEGREES1 * DEG2RAD);
+
+	data.TFCube._rotation = XMQuaternionMultiply(q, q1);
+}
+
 void Engine::SetWindowName(HWND hwnd, const std::string& name){	mWinNameLookup[hwnd] = name; }
 void Engine::SetWindowName(const std::unique_ptr<Window>& pWin, const std::string& name) { SetWindowName(pWin->GetHWND(), name); }
 
@@ -223,39 +239,62 @@ void Engine::UpdateThread_UpdateScene(const float dt)
 	FFrameData& FrameData         = GetCurrentFrameData(hwnd);
 	const Input& input            = mInputStates.at(hwnd);
 	
+	FrameData.TFCube.SetUniformScale(mScale);
+
 	// handle input
-	if(!FrameData.SceneCamera.mIsInitialized)
-		FrameData.SceneCamera.InitializeCamera(GenerateCameraInitializationParameters(mpWinMain));
-
-	constexpr float CAMERA_MOVEMENT_SPEED_MULTIPLER = 0.75f;
-	XMVECTOR LocalSpaceTranslation = XMVectorSet(0, 0, 0, 0);
-
-	FrameData.TFCube.SetScale(XMVECTOR{mScale,mScale ,mScale});
-
-	if (input.IsKeyDown(KeyCode::LeftAlt))
+	if (mToggleInputsToCamRot) //Toggle To Camera Rotation
 	{
-		if (input.IsMouseDown(MOUSE_BUTTON_RIGHT))
-		{
-			LocalSpaceTranslation += XMVECTOR{-1.0f,0.0f,0.0f} * input.GetMouseDelta()[0] * mMouseDragSensitivity;
-			LocalSpaceTranslation += XMVECTOR{ 0.0f,1.0f,0.0f} * input.GetMouseDelta()[1] * mMouseDragSensitivity;
+		if (!FrameData.SceneCamera.mIsInitialized)
+			FrameData.SceneCamera.InitializeCamera(GenerateCameraInitializationParameters(mpWinMain));
 
-			LocalSpaceTranslation *= CAMERA_MOVEMENT_SPEED_MULTIPLER;
-		}
-		if (input.IsMouseDown(MOUSE_BUTTON_LEFT))
+		constexpr float CAMERA_MOVEMENT_SPEED_MULTIPLER = 0.75f;
+		XMVECTOR LocalSpaceTranslation = XMVectorSet(0, 0, 0, 0);
+
+		if (input.IsKeyDown(KeyCode::LeftAlt))
 		{
-			FrameData.SceneCamera.Rotate(input.GetMouseDelta()[0], input.GetMouseDelta()[1], dt * mMouseRotSensitivity);
+			if (input.IsMouseDown(MOUSE_BUTTON_RIGHT))
+			{
+				LocalSpaceTranslation += XMVECTOR{ -1.0f,0.0f,0.0f } *input.GetMouseDelta()[0] * mMouseDragSensitivity;
+				LocalSpaceTranslation += XMVECTOR{ 0.0f,1.0f,0.0f } *input.GetMouseDelta()[1] * mMouseDragSensitivity;
+
+				LocalSpaceTranslation *= CAMERA_MOVEMENT_SPEED_MULTIPLER;
+			}
+			if (input.IsMouseDown(MOUSE_BUTTON_LEFT))
+			{
+				FrameData.SceneCamera.Rotate(input.GetMouseDelta()[0], input.GetMouseDelta()[1], dt * mMouseRotSensitivity);
+			}
+			if (input.IsMouseScrollDown() || input.IsMouseScrollUp())
+			{
+				LocalSpaceTranslation += XMVECTOR{ 0.0f,0.0f,1.0f } *input.GetMouseScroll() * mMouseZoomSensitivity;
+			}
 		}
-		if (input.IsMouseScrollDown() || input.IsMouseScrollUp())
+
+		// update camera
+		CameraInput camInput(LocalSpaceTranslation);
+		camInput.DeltaMouseXY = input.GetMouseDelta();
+
+		FrameData.SceneCamera.Update(dt, camInput);
+	}
+	else //Toggle To Object Rotation
+	{
+		constexpr float MOVEMENT_SPEED_MULTIPLER = 0.75f;
+
+		if (input.IsKeyDown(KeyCode::LeftAlt))
 		{
-			LocalSpaceTranslation += XMVECTOR{ 0.0f,0.0f,1.0f } * input.GetMouseScroll() * mMouseZoomSensitivity;
+			if (input.IsMouseDown(MOUSE_BUTTON_RIGHT))
+			{
+				FrameData.TFCube.RotateAroundAxisRadians(
+					XMVector3Normalize(XMVECTOR{ input.GetMouseDelta()[1],0,0}),
+					mObjectRotaionDegree * dt);
+			}
+			if (input.IsMouseDown(MOUSE_BUTTON_LEFT))
+			{
+				FrameData.TFCube.RotateAroundAxisRadians(
+					XMVector3Normalize(-XMVECTOR{ 0,0, input.GetMouseDelta()[0] }),
+					mObjectRotaionDegree * dt);
+			}
 		}
 	}
-	
-	// update camera
-	CameraInput camInput(LocalSpaceTranslation);
-	camInput.DeltaMouseXY = input.GetMouseDelta();
-
-	FrameData.SceneCamera.Update(dt, camInput);
 }
 
 void Engine::UpdateThread_PostUpdate()
@@ -299,22 +338,13 @@ void Engine::Load_SceneData_Dispatch()
 		constexpr XMFLOAT3 CUBE_POSITION         = XMFLOAT3(0, -15, 40);
 		constexpr float    CUBE_SCALE            = 1.0f;
 
-		constexpr XMFLOAT3 CUBE_ROTATION_VECTOR  = XMFLOAT3(-1, 0, 0);
-		constexpr float    CUBE_ROTATION_DEGREES = 90.0f;
-		const XMVECTOR     CUBE_ROTATION_AXIS    = XMVector3Normalize(XMLoadFloat3(&CUBE_ROTATION_VECTOR));
-		XMVECTOR q = XMQuaternionRotationAxis(CUBE_ROTATION_AXIS, CUBE_ROTATION_DEGREES * DEG2RAD);
-
-		constexpr XMFLOAT3 CUBE_ROTATION_VECTOR1 = XMFLOAT3(0, -1, 0);
-		constexpr float    CUBE_ROTATION_DEGREES1 = 180.0f;
-		const XMVECTOR     CUBE_ROTATION_AXIS1 = XMVector3Normalize(XMLoadFloat3(&CUBE_ROTATION_VECTOR1));
-
-		XMVECTOR q1 = XMQuaternionRotationAxis(CUBE_ROTATION_AXIS1, CUBE_ROTATION_DEGREES1 * DEG2RAD);
-
 		data.TFCube = Transform(
 			  CUBE_POSITION
-			, XMQuaternionMultiply(q , q1)
+			, XMVECTOR{ 1.0f,0.0f, 0.0f, 0.0f }
 			, XMFLOAT3(CUBE_SCALE, CUBE_SCALE, CUBE_SCALE)
 		);
+
+		SetObjectDefaultRotation(data);
 
 		CameraData camData = GenerateCameraInitializationParameters(mpWinMain);
 		data.SceneCamera.InitializeCamera(camData);

@@ -233,11 +233,15 @@ private:
 	// One Swapchain.Resize() call is required for the first time 
 	// transition of swapchains which are initialzied fullscreen.
 	std::unordered_map<HWND, bool>  mInitialSwapchainResizeRequiredWindowLookup;
-
+	
+	//InGui inputs
 	float mMouseDragSensitivity = 0.5f;
-	float mMouseRotSensitivity = 0.1f;
+	float mMouseRotSensitivity = 1.0f;
 	float mMouseZoomSensitivity = 0.5f;
+	float mObjectRotaionDegree = 2.0f;
 	float mScale = 1.0f;
+	bool  mToggleInputsToCamRot = true;
+
 private:
 	void                            InitializeEngineSettings(const FStartupParameters& Params);
 	void                            InitializeWindows(const FStartupParameters& Params);
@@ -279,7 +283,7 @@ private:
 
 	bool                            IsWindowRegistered(HWND hwnd) const;
 
-
+	void							SetObjectDefaultRotation(FFrameData& data);
 	// Reads EngineSettings.ini from next to the executable and returns a 
 	// FStartupParameters struct as it readily has override booleans for engine settings
 	static FStartupParameters       ParseEngineSettingsFile();

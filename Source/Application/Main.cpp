@@ -75,6 +75,11 @@ void ParseCommandLineParameters(FStartupParameters& refStartupParams, PSTR pScmd
 	}
 }
 
+extern "C" {
+	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001; // NVIDIA
+	__declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001; // AMD
+}
+
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR pScmdl, int iCmdShow)
 {
 	FStartupParameters StartupParameters = {};

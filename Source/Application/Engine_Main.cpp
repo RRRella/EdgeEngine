@@ -63,6 +63,8 @@ std::string Engine::OpenFile(const char* filter) const
 
 	if (GetOpenFileNameA(&ofn))
 		return ofn.lpstrFile;
+	else
+		return std::string();
 }
 
 void Engine::Exit()

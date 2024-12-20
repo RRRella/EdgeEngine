@@ -52,6 +52,11 @@ public:
 		RotateInWorldSpace(XMQuaternionRotationAxis(XMLoadFloat3(&axis), angle * DEG2RAD));
 	}
 
+	void RotateAroundLocalAxisDegrees(const XMVECTOR& axis, float angle)
+	{
+		RotateInLocalSpace(XMQuaternionRotationAxis(axis, (angle * DEG2RAD)));
+	}
+
 	void RotateAroundLocalXAxisDegrees(float angle)  
 	{ 
 		RotateInLocalSpace(XMQuaternionRotationAxis(XMLoadFloat3(&XAxis), (angle * DEG2RAD)));

@@ -242,10 +242,36 @@ void Engine::RenderThread_DrawImguiWidgets()
 	//Setting
 	ImGui::Begin("Settings");
 
-	ImGui::DragFloat("Dragging Sensitivity", &mMouseDragSensitivity, 0.01f, 0.5f, 10.0f, "%.2f");
-	ImGui::DragFloat("Rotational Sensitivity", &mMouseRotSensitivity, 0.01f, 0.01f, 10.0f, "%.2f");
-	ImGui::DragFloat("Zoom Sensitivity", &mMouseZoomSensitivity, 0.01f, 1.0f, 10.0f, "%.2f");
 	ImGui::DragFloat("Scale", &mScale, 0.01f, 0.001f, 10.0f, "%.3f");
+
+	if (mToggleInputsToCamRot)
+	{
+		if (ImGui::Button("Switch To Object Handling"))
+			mToggleInputsToCamRot = false;
+
+		if (ImGui::Button("Reset Camera"))
+		{
+			for (int i = 0; i < mScene_MainWnd.mFrameData.size(); ++i)
+				mScene_MainWnd.mFrameData[i].SceneCamera.Reset();
+		}
+
+		ImGui::DragFloat("Dragging Sensitivity", &mMouseDragSensitivity, 0.01f, 0.5f, 10.0f, "%.2f");
+		ImGui::DragFloat("Rotational Sensitivity", &mMouseRotSensitivity, 0.01f, 0.01f, 10.0f, "%.2f");
+		ImGui::DragFloat("Zoom Sensitivity", &mMouseZoomSensitivity, 0.01f, 1.0f, 10.0f, "%.2f");
+	}
+	else
+	{
+		if(ImGui::Button("Switch To Camera Handling"))
+			mToggleInputsToCamRot = true;
+
+		if (ImGui::Button("Reset Object Rotation"))
+		{
+			for (int i = 0; i < mScene_MainWnd.mFrameData.size(); ++i)
+				SetObjectDefaultRotation(mScene_MainWnd.mFrameData[i]);
+		}
+
+		ImGui::DragFloat("Object Rotation Degree", &mObjectRotaionDegree, 0.01f, 1.0f, 100.0f, "%.2f");
+	}
 
 	ImGui::End();
 
@@ -259,12 +285,16 @@ void Engine::RenderThread_DrawImguiWidgets()
 				if (!mBuiltinMeshes[EBuiltInMeshes::OBJ_FILE])
 				{
 					const char* filter = "OBJ(*.obj)\0*.obj";
+					const std::string OBJFilePath = OpenFile(filter);
 
-					GeometryGenerator::GeometryData<FVertexWithNormal> data;
-					GeometryGenerator::LoadObjFromFile<FVertexWithNormal>(OpenFile(filter), data);
+					if (!OBJFilePath.empty())
+					{
+						GeometryGenerator::GeometryData<FVertexWithNormal> data;
+						GeometryGenerator::LoadObjFromFile<FVertexWithNormal>(OBJFilePath, data);
 
-					mBuiltinMeshNames[EBuiltInMeshes::OBJ_FILE] = "OBJ_File";
-					mBuiltinMeshes[EBuiltInMeshes::OBJ_FILE] = std::make_shared<Mesh>(&mRenderer, data.Vertices, data.Indices, mBuiltinMeshNames[EBuiltInMeshes::OBJ_FILE]);
+						mBuiltinMeshNames[EBuiltInMeshes::OBJ_FILE] = "OBJ_File";
+						mBuiltinMeshes[EBuiltInMeshes::OBJ_FILE] = std::make_shared<Mesh>(&mRenderer, data.Vertices, data.Indices, mBuiltinMeshNames[EBuiltInMeshes::OBJ_FILE]);
+					}
 				}
 				else
 				{
@@ -276,13 +306,16 @@ void Engine::RenderThread_DrawImguiWidgets()
 				const char* filter = "Image Files (*.jpg;*.png)\0*.jpg;*.png";
 
 				const std::string TextureFilePath = OpenFile(filter);
-				TextureID texID = mRenderer.CreateTextureFromFile(TextureFilePath.c_str());
-				SRV_ID    srvID = mRenderer.CreateAndInitializeSRV(texID);
+				if (!TextureFilePath.empty())
+				{
+					TextureID texID = mRenderer.CreateTextureFromFile(TextureFilePath.c_str());
+					SRV_ID    srvID = mRenderer.CreateAndInitializeSRV(texID);
 
-				for (int i = 0; i < mScene_MainWnd.mFrameData.size(); ++i)
-					mScene_MainWnd.mFrameData[i].SRVObjectTex = srvID;
+					for (int i = 0; i < mScene_MainWnd.mFrameData.size(); ++i)
+						mScene_MainWnd.mFrameData[i].SRVObjectTex = srvID;
 
-				mRenderer.SetStallTexture(mRenderer.GetSwapChainCurrentBackBufferIndex(mpWinMain->GetHWND()) , texID - 1);
+					mRenderer.SetStallTexture(mRenderer.GetSwapChainCurrentBackBufferIndex(mpWinMain->GetHWND()), texID - 1);
+				}
 			}
 			if (ImGui::MenuItem("Clear"))
 			{
